@@ -30,7 +30,7 @@ export default async function PlansPage({ searchParams }: { searchParams: Promis
     <Shell cartBar={false}>
       <div className="mx-auto max-w-[1320px] px-4 pb-8 pt-8 md:px-8 md:pt-12">
         {plans.length === 0 ? <Empty title="Meal plans are coming soon" body="Add plans in the admin portal and they appear here." /> :
-          <PlanBuilder plans={plans} initialSlug={chosen?.slug} addresses={addresses} signedIn={!!session.user} kitchen={{ lat: settings.kitchen_lat, lng: settings.kitchen_lng }} radiusKm={Number(settings.delivery_radius_km)} taxBps={settings.tax_rate_bps} weekMenu={menu} />}
+          <PlanBuilder plans={plans} initialSlug={chosen?.slug} addresses={addresses} signedIn={!!session.user} phone={session.profile?.phone ?? ""} kitchen={{ lat: settings.kitchen_lat, lng: settings.kitchen_lng }} radiusKm={Number(settings.delivery_radius_km)} taxBps={settings.tax_rate_bps} weekMenu={menu} />}
       </div>
       <PlansHow c={content("plans_how")} />
       <Plate c={content("plate")} />

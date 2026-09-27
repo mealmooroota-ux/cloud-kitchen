@@ -5,12 +5,14 @@ import type { Address, MealPlan } from "@/lib/types";
 import { Banner, Button, LinkButton } from "@/components/ui";
 import { AddressForm } from "./AddressForm";
 import { rupees } from "@/lib/format";
+import { normalizeIndianMobile } from "@/lib/phone";
 
 const PREFS = ["No onion & garlic", "Less spicy", "No dairy", "Jain"];
 const MEAL_LABEL: Record<string, string> = { BREAKFAST: "Breakfast", LUNCH: "Lunch", DINNER: "Dinner", SNACK: "Snack" };
 const DAYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 
-export function PlanBuilder({ plans, initialSlug, addresses, signedIn, kitchen, radiusKm, taxBps, weekMenu }: {
+export function PlanBuilder({ plans, initialSlug, addresses, signedIn, kitchen, radiusKm, taxBps, weekMenu, phone: phone0 = "" }: {
+  phone?: string;
   plans: MealPlan[]; initialSlug?: string; addresses: Address[]; signedIn: boolean; kitchen: { lat: number; lng: number }; radiusKm: number; taxBps: number;
   weekMenu: { weekday: number; meal: string; name: string }[];
 }) {
@@ -28,6 +30,8 @@ export function PlanBuilder({ plans, initialSlug, addresses, signedIn, kitchen, 
   const [adding, setAdding] = useState(false);
   const [err, setErr] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const [phone, setPhone] = useState(phone0.replace(/^\+91/, ""));
+  const phoneOk = !!normalizeIndianMobile(phone);
   const base = price ? (diet === "VEG" ? price.veg_price_paise : price.nonveg_price_paise ?? price.veg_price_paise) : 0;
   const tax = Math.round((base * taxBps) / 10000);
   const meals = price ? price.duration_days * plan.meals.length : 0;
@@ -35,7 +39,7 @@ export function PlanBuilder({ plans, initialSlug, addresses, signedIn, kitchen, 
   const opt = (on: boolean) => `flex flex-1 cursor-pointer flex-col gap-1 rounded-[16px] p-4 text-left ${on ? "border-2 border-brand bg-brand-soft" : "border border-line bg-surface"}`;
   async function pay() {
     setBusy(true); setErr(null);
-    const r = await fetch("/api/plans/checkout", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ planId: plan.id, priceId: price.id, diet, preferences: prefs, startDate: start, addressId }) });
+    const r = await fetch("/api/plans/checkout", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ planId: plan.id, priceId: price.id, diet, preferences: prefs, startDate: start, addressId, contactPhone: phone }) });
     const j = await r.json().catch(() => ({}));
     setBusy(false);
     if (!r.ok) return setErr(j.error?.message ?? "Couldn’t create your plan.");
@@ -60,6 +64,7 @@ export function PlanBuilder({ plans, initialSlug, addresses, signedIn, kitchen, 
           {signedIn ? (
             <div className="mt-3 flex flex-col gap-2">
               {addresses.map((a) => <label key={a.id} className={`flex cursor-pointer gap-3 rounded-[12px] border p-3 ${a.id === addressId ? "border-brand bg-brand-soft" : "border-line bg-surface"}`}><input type="radio" checked={a.id === addressId} onChange={() => setAddressId(a.id)} className="mt-1 size-5 accent-[var(--color-brand)]" /><span className="text-sm"><b>{a.label}</b> · {a.line1}, {a.city}</span></label>)}
+              <label className="mt-2 flex flex-col gap-2 text-sm font-semibold sm:w-72">Mobile number for deliveries<input inputMode="tel" autoComplete="tel-national" placeholder="98765 43210" value={phone} onChange={(e) => setPhone(e.target.value)} className={`h-12 rounded-[8px] border bg-raised px-3 font-normal ${phone && !phoneOk ? "border-danger" : "border-line-strong"}`} /></label>
               {adding ? <div className="rounded-[20px] border border-line bg-surface p-5"><AddressForm kitchen={kitchen} radiusKm={radiusKm} onSaved={(id) => { setAddressId(id); setAdding(false); router.refresh(); }} /></div> : <button type="button" className="self-start text-sm font-semibold text-brand" onClick={() => setAdding(true)}>Add a new address</button>}
             </div>
           ) : <div className="mt-3"><LinkButton href={`/login?next=${encodeURIComponent(`/plans?plan=${slug}`)}`} variant="secondary">Sign in to choose your address</LinkButton></div>}
@@ -86,7 +91,7 @@ export function PlanBuilder({ plans, initialSlug, addresses, signedIn, kitchen, 
           <div className="flex justify-between border-t border-line pt-2 text-base font-semibold text-ink"><dt>Total</dt><dd className="tabular font-mono">{rupees(base + tax, { decimals: true })}</dd></div>
         </dl>
         {err && <div className="mt-4"><Banner tone="danger" title={err} /></div>}
-        <Button size="lg" className="mt-5 w-full" disabled={busy || !signedIn || !addressId || !price} onClick={pay}>{busy ? "Starting…" : "Continue to pay"}</Button>
+        <Button size="lg" className="mt-5 w-full" disabled={busy || !signedIn || !addressId || !price || !phoneOk} onClick={pay}>{busy ? "Starting…" : "Continue to pay"}</Button>
         <p className="mt-3 text-xs text-muted">Paid once, securely. Final amount is checked by our server. Skipped meals are credited to your plan.</p>
       </aside>
     </div>

@@ -14,9 +14,12 @@ export async function getSessionUser() {
   let role = (profile?.role ?? "CUSTOMER") as Role;
   // Bootstrap admins: a verified phone listed in ADMIN_PHONES (Vercel env) is promoted to ADMIN.
   const phone = (data.user.phone ?? "").replace(/\D/g, "").slice(-10);
-  if (role !== "ADMIN" && phone && data.user.phone_confirmed_at && env.adminPhones.includes(phone)) {
+  const email = (data.user.email ?? "").toLowerCase();
+  const byEmail = !!email && !!data.user.email_confirmed_at && env.adminEmails.includes(email);
+  const byPhone = !!phone && !!data.user.phone_confirmed_at && env.adminPhones.includes(phone);
+  if (role !== "ADMIN" && (byEmail || byPhone)) {
     try {
-      await createAdminClient().from("profiles").upsert({ id: data.user.id, phone: data.user.phone, role: "ADMIN" });
+      await createAdminClient().from("profiles").upsert({ id: data.user.id, email: data.user.email ?? null, role: "ADMIN" });
       role = "ADMIN";
       log("info", "admin.bootstrap_promoted", { userId: data.user.id });
     } catch { /* service key missing: stays customer */ }

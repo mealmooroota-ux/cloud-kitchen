@@ -26,6 +26,8 @@ export const env = {
   upi: { vpa: read("UPI_PAYEE_VPA"), name: read("UPI_PAYEE_NAME") ?? "MOOROOTA" },
   maps: { provider: read("MAPS_PROVIDER") as "google" | "ors" | undefined, key: read("MAPS_API_KEY") },
   cronSecret: read("CRON_SECRET"),
+  /** Emails that become ADMIN automatically once signed in with a confirmed email (or Google), e.g. "you@gmail.com". */
+  adminEmails: (read("ADMIN_EMAILS") ?? "").split(",").map((e) => e.trim().toLowerCase()).filter((e) => e.includes("@")),
   /** Phone numbers that become ADMIN automatically on sign-in, e.g. "9742022976,8660828930". */
   adminPhones: (read("ADMIN_PHONES") ?? "").split(",").map((p) => p.replace(/\D/g, "")).filter((p) => p.length >= 10).map((p) => p.slice(-10)),
 };

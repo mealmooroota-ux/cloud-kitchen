@@ -5,7 +5,8 @@ import { AddressBook } from "@/components/site/AddressBook";
 import { Button } from "@/components/ui";
 import { requireUser } from "@/lib/auth";
 import { getSettings } from "@/lib/settings";
-import { signOut, updateName } from "./actions";
+import { signOut, updateName, updatePhone } from "./actions";
+import { displayPhone } from "@/lib/phone";
 import type { Address } from "@/lib/types";
 
 export const dynamic = "force-dynamic";
@@ -32,10 +33,15 @@ export default async function AccountPage() {
         </nav>
         <section className="flex flex-col gap-4">
           <h2 className="text-lg font-semibold">Profile</h2>
-          <p className="tabular font-mono text-sm text-muted">{user.phone ? `+${user.phone.replace(/^\+/, "")}` : user.email} · verified</p>
+          <p className="text-sm text-muted">Signed in as <span className="font-semibold text-ink">{user.email}</span></p>
           <form action={updateName} className="flex gap-2">
             <label htmlFor="full_name" className="sr-only">Your name</label>
             <input id="full_name" name="full_name" defaultValue={profile?.full_name ?? ""} placeholder="Your name" className="h-12 flex-1 rounded-[8px] border border-line-strong bg-raised px-3.5" />
+            <Button type="submit" variant="secondary" size="lg">Save</Button>
+          </form>
+          <form action={updatePhone} className="flex gap-2">
+            <label htmlFor="phone" className="sr-only">Mobile number for deliveries</label>
+            <input id="phone" name="phone" inputMode="tel" defaultValue={profile?.phone ? displayPhone(profile.phone) : ""} placeholder="Mobile number for deliveries" className="h-12 flex-1 rounded-[8px] border border-line-strong bg-raised px-3.5" />
             <Button type="submit" variant="secondary" size="lg">Save</Button>
           </form>
         </section>

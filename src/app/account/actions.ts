@@ -57,6 +57,16 @@ export async function updateName(formData: FormData) {
   await db.from("profiles").update({ full_name: name }).eq("id", auth.user.id);
   revalidatePath("/account");
 }
+export async function updatePhone(formData: FormData) {
+  const { normalizeIndianMobile } = await import("@/lib/phone");
+  const phone = normalizeIndianMobile(String(formData.get("phone") ?? ""));
+  const db = await createClient();
+  const { data: auth } = await db.auth.getUser();
+  if (!auth.user || !phone) return;
+  // phone is server-managed on profiles (see 0002 guard), so write it with the service role after checking the user
+  await createAdminClient().from("profiles").update({ phone }).eq("id", auth.user.id);
+  revalidatePath("/account");
+}
 export async function signOut() {
   const db = await createClient();
   await db.auth.signOut();

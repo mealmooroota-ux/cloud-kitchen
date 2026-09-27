@@ -9,12 +9,14 @@ import { startPayment } from "@/lib/payments/service";
 import { rateLimit } from "@/lib/rate-limit";
 import { json, fail, sameOrigin } from "@/lib/api";
 import { log } from "@/lib/log";
+import { normalizeIndianMobile } from "@/lib/phone";
 
 const Body = z.object({
   lines: z.array(CartLineSchema).min(1).max(30),
   addressId: z.string().uuid(),
   couponCode: z.string().max(40).optional().nullable(),
   notes: z.string().max(300).optional().nullable(),
+  contactPhone: z.string().max(20),
 });
 
 function isOpen(open: string, close: string) {
@@ -35,6 +37,8 @@ export async function POST(req: Request) {
   const parsed = Body.safeParse(await req.json().catch(() => null));
   if (!parsed.success) return fail("INVALID", "Check your order details.");
   const { lines, addressId, couponCode, notes } = parsed.data;
+  const contactPhone = normalizeIndianMobile(parsed.data.contactPhone);
+  if (!contactPhone) return fail("PHONE", "Enter a valid 10-digit mobile number so the rider can reach you.");
 
   const settings = await getSettings();
   if (!settings.is_open || !isOpen(settings.open_time, settings.close_time)) return fail("CLOSED", "The kitchen is closed right now.", 422);
@@ -53,7 +57,7 @@ export async function POST(req: Request) {
       user_id: auth.user.id, kind: "ORDER", subtotal_paise: quote.subtotal_paise, delivery_fee_paise: quote.delivery_fee_paise,
       discount_paise: quote.discount_paise, tax_paise: quote.tax_paise, total_paise: quote.total_paise, coupon_code: quote.coupon_code,
       address_id: addr.id, delivery_address: { label: addr.label, line1: addr.line1, line2: addr.line2, landmark: addr.landmark, city: addr.city, postal_code: addr.postal_code },
-      latitude: addr.latitude, longitude: addr.longitude, prep_minutes: quote.prep_minutes, notes: notes ?? null,
+      latitude: addr.latitude, longitude: addr.longitude, prep_minutes: quote.prep_minutes, notes: notes ?? null, contact_phone: contactPhone,
       distance_m: route?.distanceMeters ?? null, travel_seconds: route?.durationSeconds ?? null, eta_is_estimate: eta.isEstimate,
       estimated_ready_at: eta.readyAt.toISOString(), estimated_delivery_at: eta.deliveryAt?.toISOString() ?? null,
     }).select("id").single();
@@ -64,6 +68,7 @@ export async function POST(req: Request) {
     })));
     if (iErr) throw new Error(iErr.message);
     if (quote.coupon_code) await db.rpc("increment_coupon", { p_code: quote.coupon_code });
+    await db.from("profiles").update({ phone: contactPhone }).eq("id", auth.user.id);
     await startPayment(db, order.id);
     log("info", "order.created", { orderId: order.id, total: quote.total_paise });
     return json({ orderId: order.id });

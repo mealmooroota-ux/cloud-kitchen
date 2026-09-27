@@ -27,21 +27,23 @@ In your Supabase project (`sxofpopumsobvwbazpzk`), open **SQL Editor → New que
 
 1. `supabase/migrations/0001_init.sql`: tables, security rules, order state machine
 2. `supabase/migrations/0002_security_hardening.sql`: locks roles, prices and payments so they can only be changed by the server
-3. `supabase/seed.sql`: starter categories, plans and dishes
-4. `supabase/seed-v2.sql`: 21 more trial dishes with photos, the full homepage and "Our kitchen" text, a sample week for every meal plan, and the MOOROOTA name
+3. `supabase/migrations/0003_email_auth_contact_phone.sql`: delivery phone on orders, names from Google/email sign-up
+4. `supabase/seed.sql`: starter categories, plans and dishes
+5. `supabase/seed-v2.sql`: 21 more trial dishes with photos, the full homepage and "Our kitchen" text, a sample week for every meal plan, and the MOOROOTA name
 
-**Already ran 0001 and seed.sql earlier?** Just run `0002_security_hardening.sql` and then `seed-v2.sql`. Both are safe to run more than once. Note that `seed-v2.sql` replaces the homepage text with the new copy.
+**Already ran the earlier files (or MOOROOTA-SETUP.sql)?** Just run `0003_email_auth_contact_phone.sql`. Both are safe to run more than once. Note that `seed-v2.sql` replaces the homepage text with the new copy.
 
-**Turn on phone sign-in** (customers and staff both sign in with a phone OTP):
+**Sign-in (email + password, and Google)**. Customers and staff use the same sign-in; the delivery phone number is collected at checkout.
 
-1. **Authentication → Sign In / Providers → Phone**: enable it and choose an SMS provider. Twilio is the most common choice; paste its Account SID, Auth Token and Messaging Service SID (or use Twilio Verify). Indian numbers need DLT registration for SMS, which your SMS provider guides you through. Start early, as it can take a few days.
-2. **To test before SMS works:** on the same Phone screen, add **Test phone numbers and OTPs**, for example `918660828930=123456`. That number then signs in with code `123456` and no SMS is sent.
-3. Keep the OTP rate limits on (Authentication → Rate limits).
-4. **Authentication → URL Configuration**: set **Site URL** to your live address.
+1. **Authentication → Sign In / Providers → Email**: keep it enabled. While testing you can switch off **Confirm email** so new accounts work instantly. Switch it back on before launch; Supabase's built-in email service sends only a few emails per hour, so add your own SMTP (Authentication → Emails → SMTP settings, e.g. Resend or Brevo) when you go live.
+2. **Google sign-in**:
+   - In Google Cloud Console → APIs & Services → Credentials, create an **OAuth client ID** of type **Web application**.
+   - Under **Authorized redirect URIs** add `https://sxofpopumsobvwbazpzk.supabase.co/auth/v1/callback`.
+   - Copy the Client ID and Client secret into **Supabase → Authentication → Sign In / Providers → Google**, enable it and save.
+3. **Authentication → URL Configuration**: Site URL = your live address; add `https://<your-domain>/**` to Redirect URLs (needed for Google, confirmation and password-reset links, which return to `/auth/callback`).
+4. **Admin access:** add `ADMIN_EMAILS` in Vercel with your email (several separated by commas). Sign in at `/admin/login` with that email (or Google with that email) and you become an admin automatically. Add kitchen and delivery staff in **Admin → Customers & staff** after they create an account.
 
-If sending a code fails, the sign-in page now shows the exact reason Supabase gave. "Phone sign-in isn't switched on yet" means step 1 isn't done.
-
-**Admin access (no password):** add `ADMIN_PHONES` in Vercel with your 10-digit mobile number (several numbers can be separated by commas). Sign in at `/admin/login` with that number and it becomes an admin automatically. Add kitchen and delivery staff later in **Admin → Customers & staff**.
+Phone OTP (WhatsApp/SMS) can be added later as an extra sign-in method (`src/components/site/PhoneLogin.tsx` is ready). Orders already store the delivery phone separately, so nothing else changes.
 
 **Photos:** dishes and page images from `seed-v2.sql` are free Unsplash stock photos, good for a trial. Before launch, upload photos of your own food in Admin → Products and Admin → Site content. Customers should see what they will actually receive.
 
@@ -62,7 +64,7 @@ Import the GitHub repo in Vercel (it detects Next.js automatically). Before the 
 | `UPI_PAYEE_NAME` | The name shown in the customer's UPI app | No |
 | `MAPS_PROVIDER` / `MAPS_API_KEY` | See step 5 (optional) | **Yes** (key) |
 | `CRON_SECRET` | Any long random string you invent | **Yes** |
-| `ADMIN_PHONES` | Your mobile number(s), e.g. `9742022976` | No |
+| `ADMIN_EMAILS` | Your email(s), e.g. `you@gmail.com` | No |
 
 Only the variables starting with `NEXT_PUBLIC_` are visible to browsers; everything else stays on the server. After adding or changing variables, redeploy (Deployments → ⋯ → Redeploy).
 
@@ -166,3 +168,13 @@ npm run dev
 - A Razorpay or Cashfree provider (the interface is ready).
 - A refund API call (refunds are currently issued in your payment dashboard, then marked in admin).
 - Rider live GPS tracking. Status and ETA are live today; a moving map pin would need a rider app.
+
+## Brand
+
+The MOOROOTA mark is an "m" made of rising steam over a bowl: fresh, hot, home-cooked, every day. Files: `public/brand/mooroota-mark.svg` (full colour), `public/brand/mooroota-app-icon.svg` (app icon), `src/app/icon.svg` (favicon), `src/app/apple-icon.png`, `src/app/opengraph-image.png` (link previews). Component: `src/components/brand/Logo.tsx`. Keep clear space of one "arch width" around the mark; minimum size 20 px (use the app-icon version below that). Colours: terracotta #B4502D, ink #1F1B16, cream #FFF8EE.
+
+## Motion
+
+- `/experience`: a scroll-driven story in seven chapters (GSAP ScrollTrigger, SplitText, DrawSVG, MotionPath, and the 3D cooker).
+- Site-wide: headings rise word by word (`data-split`), photos drift (`data-parallax`), buttons are magnetic (`data-magnetic`), hero entrance and the logo's steam drawing itself.
+- All motion is turned off for visitors who prefer reduced motion; low-power devices get lighter versions.

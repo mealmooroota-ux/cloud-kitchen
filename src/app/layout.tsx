@@ -16,7 +16,7 @@ export const metadata: Metadata = {
   metadataBase: new URL(site),
   title: { default: `${BRAND.name} · ${BRAND.tagline} · Homemade meals in Bengaluru`, template: `%s · ${BRAND.name}` },
   description: BRAND.description,
-  openGraph: { type: "website", siteName: BRAND.name, locale: "en_IN", images: ["/images/cooker-exploded.webp"] },
+  openGraph: { type: "website", siteName: BRAND.name, locale: "en_IN" },
   robots: { index: true, follow: true },
 };
 export const viewport: Viewport = { themeColor: "#F7F2E9", width: "device-width", initialScale: 1, viewportFit: "cover" };

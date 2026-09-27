@@ -28,7 +28,7 @@ export interface Address {
 export interface Order {
   id: string; order_number: string; user_id: string; kind: "ORDER" | "PLAN"; status: OrderStatus; payment_status: PaymentStatus;
   subtotal_paise: number; delivery_fee_paise: number; discount_paise: number; tax_paise: number; total_paise: number;
-  coupon_code: string | null; delivery_address: Record<string, unknown> | null; latitude: number | null; longitude: number | null;
+  coupon_code: string | null; contact_phone?: string | null; delivery_address: Record<string, unknown> | null; latitude: number | null; longitude: number | null;
   distance_m: number | null; travel_seconds: number | null; prep_minutes: number | null; eta_is_estimate: boolean;
   estimated_ready_at: string | null; estimated_delivery_at: string | null; notes: string | null; created_at: string; updated_at: string;
 }

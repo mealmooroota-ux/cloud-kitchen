@@ -5,11 +5,12 @@ import type { Address } from "@/lib/types";
 import { cart, toApiLines, useCart } from "@/components/cart/store";
 import { useQuote } from "@/components/cart/useQuote";
 import { AddressForm } from "./AddressForm";
-import { Banner, Button, Empty, LinkButton, TextArea } from "@/components/ui";
+import { Banner, Button, Empty, Field, LinkButton, TextArea } from "@/components/ui";
 import { haversineKm } from "@/lib/geo";
 import { rupees } from "@/lib/format";
+import { normalizeIndianMobile } from "@/lib/phone";
 
-export function CheckoutForm({ addresses, kitchen, radiusKm, open }: { addresses: Address[]; kitchen: { lat: number; lng: number }; radiusKm: number; open: boolean }) {
+export function CheckoutForm({ addresses, kitchen, radiusKm, open, phone: phone0 }: { addresses: Address[]; kitchen: { lat: number; lng: number }; radiusKm: number; open: boolean; phone: string }) {
   const router = useRouter();
   const lines = useCart();
   const [addressId, setAddressId] = useState(addresses[0]?.id ?? "");
@@ -17,6 +18,8 @@ export function CheckoutForm({ addresses, kitchen, radiusKm, open }: { addresses
   const [couponDraft, setCouponDraft] = useState("");
   const [coupon, setCoupon] = useState("");
   const [notes, setNotes] = useState("");
+  const [phone, setPhone] = useState(phone0.replace(/^\+91/, ""));
+  const phoneOk = !!normalizeIndianMobile(phone);
   const [err, setErr] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const { quote, error } = useQuote(lines, coupon);
@@ -27,7 +30,7 @@ export function CheckoutForm({ addresses, kitchen, radiusKm, open }: { addresses
 
   async function place() {
     setBusy(true); setErr(null);
-    const r = await fetch("/api/checkout", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ lines: toApiLines(lines), addressId, couponCode: coupon || null, notes: notes || null }) });
+    const r = await fetch("/api/checkout", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ lines: toApiLines(lines), addressId, couponCode: coupon || null, notes: notes || null, contactPhone: phone }) });
     const j = await r.json().catch(() => ({}));
     setBusy(false);
     if (!r.ok) return setErr(j.error?.message ?? "We couldn’t place your order. Try again.");
@@ -56,6 +59,10 @@ export function CheckoutForm({ addresses, kitchen, radiusKm, open }: { addresses
           )}
           {outOfZone && <Banner tone="danger" title="This address is outside our delivery area">Choose another address.</Banner>}
         </div>
+        <div className="flex flex-col gap-2">
+          <h2 className="text-lg font-semibold">Contact number</h2>
+          <Field id="contact_phone" label="Mobile number for this delivery" inputMode="tel" autoComplete="tel-national" placeholder="98765 43210" value={phone} onChange={(e) => setPhone(e.target.value)} error={phone && !phoneOk ? "Enter a valid 10-digit mobile number" : undefined} hint="The rider calls this number if they can’t find you. We never share it." required />
+        </div>
         <TextArea id="notes" label="Cooking notes (optional)" placeholder="e.g. less spicy, no onion" maxLength={300} value={notes} onChange={(e) => setNotes(e.target.value)} />
       </section>
       <aside className="h-fit rounded-[20px] border border-line bg-surface p-6 md:sticky md:top-28">
@@ -78,7 +85,7 @@ export function CheckoutForm({ addresses, kitchen, radiusKm, open }: { addresses
           </dl>
         )}
         <div className="fixed inset-x-0 bottom-0 z-40 border-t border-line bg-surface px-4 pb-[max(16px,env(safe-area-inset-bottom))] pt-3 md:static md:mt-6 md:border-0 md:p-0">
-          <Button size="lg" className="w-full" disabled={busy || !quote || !addressId || outOfZone || !open} onClick={place}>
+          <Button size="lg" className="w-full" disabled={busy || !quote || !addressId || outOfZone || !open || !phoneOk} onClick={place}>
             {busy ? "Placing order…" : quote ? `Pay ${rupees(quote.total_paise, { decimals: true })}` : "Pay"}
           </Button>
         </div>

@@ -5,6 +5,7 @@ import { RiderForm, ManualPaymentForm } from "@/components/admin/Forms";
 import { StatusPill, Pill } from "@/components/ui";
 import { STAFF_NEXT } from "@/lib/order-state";
 import { clockTime, dateTime, rupees } from "@/lib/format";
+import { displayPhone } from "@/lib/phone";
 import type { OrderStatus } from "@/lib/types";
 
 export default async function AdminOrder({ params }: { params: Promise<{ id: string }> }) {
@@ -62,7 +63,7 @@ export default async function AdminOrder({ params }: { params: Promise<{ id: str
           </section>
           <section className="flex flex-col gap-2 rounded-[12px] border border-line bg-surface p-5 text-sm">
             <h2 className="font-semibold">Delivery</h2>
-            <p>{cust?.full_name || "Customer"} · <span className="tabular font-mono">{cust?.phone ? `+${cust.phone.replace(/^\+/, "")}` : ""}</span></p>
+            <p>{cust?.full_name || "Customer"}{(o.contact_phone || cust?.phone) && <> · <a href={`tel:${o.contact_phone || cust?.phone}`} className="tabular font-mono font-semibold text-brand">{displayPhone(o.contact_phone || cust?.phone)}</a></>}</p>
             <p className="text-muted">{[addr.line1, addr.line2, addr.landmark, addr.city, addr.postal_code].filter(Boolean).join(", ")}</p>
             {o.latitude && <a className="font-semibold text-brand" target="_blank" rel="noreferrer" href={`https://www.google.com/maps/dir/?api=1&destination=${o.latitude},${o.longitude}`}>Open route in Maps</a>}
             <p>ETA {o.estimated_delivery_at ? clockTime(o.estimated_delivery_at) : "—"}{o.distance_m ? ` · ${(o.distance_m / 1000).toFixed(1)} km` : ""}{o.eta_is_estimate ? " (routing not configured)" : ""}</p>

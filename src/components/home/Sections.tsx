@@ -15,7 +15,7 @@ function Heading({ eyebrow, title, body, tone = "saffron", center = false, class
   return (
     <Reveal className={`flex flex-col gap-4 ${center ? "mx-auto items-center text-center" : ""} ${className}`}>
       {eyebrow && <p className={`text-sm font-semibold ${tone === "herb" ? "text-herb" : "text-saffron"}`}>{eyebrow}</p>}
-      <h2 className="font-display text-[38px] leading-[1.02] tracking-[-0.03em] md:text-[64px]">{title}</h2>
+      <h2 data-split className="font-display text-[38px] leading-[1.02] tracking-[-0.03em] md:text-[64px]">{title}</h2>
       {body && <p className={`max-w-[620px] text-[17px] leading-7 text-muted md:text-lg ${center ? "mx-auto" : ""}`}>{body}</p>}
     </Reveal>
   );
@@ -27,23 +27,23 @@ export function Hero({ c, settings, today }: { c: C; settings: Settings; today: 
   return (
     <section className="relative mx-auto grid max-w-[1320px] items-center gap-10 px-4 pb-16 pt-6 md:grid-cols-[1.05fr_1fr] md:gap-14 md:px-8 md:pb-24 md:pt-10">
       <div className="flex flex-col gap-7">
-        <p className="flex items-center gap-2 text-sm font-semibold text-saffron">
+        <p className="hero-fade flex items-center gap-2 text-sm font-semibold text-saffron">
           <span className={`size-2 rounded-full ${settings.is_open ? "bg-success animate-pulse-dot" : "bg-line-strong"}`} />
           {s(c, "eyebrow")} · {settings.is_open ? "Kitchen open now" : "Kitchen closed right now"}
         </p>
         <h1 className="font-display text-[50px] leading-[0.96] tracking-[-0.04em] sm:text-[64px] md:text-[88px]">
-          {lines.map((l, i) => <span key={i} className={`block ${i === 1 ? "italic text-brand" : ""}`}>{l}</span>)}
+          {lines.map((l, i) => <span key={i} className="hero-line"><span className={i === 1 ? "italic text-brand" : ""} style={{ animationDelay: `${120 + i * 140}ms` }}>{l}</span></span>)}
         </h1>
-        <p className="max-w-[520px] text-[17px] leading-7 text-muted md:text-lg">{s(c, "body")}</p>
-        <div className="flex flex-col gap-3 sm:flex-row">
-          <LinkButton href="/menu" size="lg">{s(c, "primaryCta")}</LinkButton>
+        <p className="hero-fade max-w-[520px] text-[17px] leading-7 text-muted md:text-lg" style={{ animationDelay: "420ms" }}>{s(c, "body")}</p>
+        <div className="hero-fade flex flex-col gap-3 sm:flex-row" style={{ animationDelay: "540ms" }}>
+          <LinkButton href="/menu" size="lg" data-magnetic>{s(c, "primaryCta")}</LinkButton>
           <LinkButton href="/plans" size="lg" variant="secondary">{s(c, "secondaryCta")}</LinkButton>
         </div>
-        <ul className="flex flex-wrap gap-2 pt-2">
+        <ul className="hero-fade flex flex-wrap gap-2 pt-2" style={{ animationDelay: "660ms" }}>
           {csv(c.chips).map((chip) => <li key={chip} className="rounded-full border border-line bg-surface px-3.5 py-1.5 text-[13px] font-medium">{chip}</li>)}
         </ul>
       </div>
-      <div className="relative">
+      <div className="hero-media relative">
         <DishImage publicId={s(c, "imagePublicId") || null} name="An everyday MOOROOTA thali" sizes="(min-width: 768px) 620px, 100vw" priority aspect="aspect-[5/6] md:aspect-[4/5]" className="rounded-[36px] shadow-[0_30px_80px_-30px_rgba(31,27,22,.45)]" />
         {today.length > 0 && (
           <div className="absolute -bottom-6 left-4 right-4 rounded-[20px] border border-line bg-surface/95 p-4 shadow-[0_18px_40px_-18px_rgba(31,27,22,.35)] backdrop-blur md:-left-10 md:right-auto md:w-[300px]">
@@ -88,7 +88,7 @@ export function Homemade({ c }: { c: C }) {
         <div className="flex flex-col gap-6">
           <Heading eyebrow={s(c, "eyebrow")} title={s(c, "title")} tone="herb" />
           <Reveal delay={80} className="flex max-w-[640px] flex-col gap-4 text-[17px] leading-7 text-muted"><p>{s(c, "body")}</p>{s(c, "body2") && <p>{s(c, "body2")}</p>}</Reveal>
-          {s(c, "imagePublicId") && <Reveal delay={120}><DishImage publicId={s(c, "imagePublicId")} name="Our cooks at work" sizes="(min-width: 1024px) 720px, 100vw" aspect="aspect-[16/9]" className="mt-4 rounded-[28px]" /></Reveal>}
+          {s(c, "imagePublicId") && <Reveal delay={120} className="mt-4 overflow-hidden rounded-[28px]"><div data-parallax="0.08" className="scale-[1.18]"><DishImage publicId={s(c, "imagePublicId")} name="Our cooks at work" sizes="(min-width: 1024px) 720px, 100vw" aspect="aspect-[16/9]" /></div></Reveal>}
         </div>
         {timeline.length > 0 && (
           <Reveal delay={100} className="h-fit rounded-[28px] bg-ink p-7 text-ground md:p-9 lg:sticky lg:top-28">
@@ -126,7 +126,7 @@ export function Plate({ c }: { c: C }) {
     <section className="bg-raised py-20 md:py-32">
       <div className="mx-auto grid max-w-[1320px] items-center gap-12 px-4 md:px-8 lg:grid-cols-[1fr_1.1fr] lg:gap-20">
         <Reveal className="relative">
-          <DishImage publicId={s(c, "imagePublicId") || null} name="A balanced everyday thali" sizes="(min-width: 1024px) 600px, 100vw" aspect="aspect-square" className="rounded-full" />
+          <div className="spin-slow"><DishImage publicId={s(c, "imagePublicId") || null} name="A balanced everyday thali" sizes="(min-width: 1024px) 600px, 100vw" aspect="aspect-square" className="rounded-full" /></div>
         </Reveal>
         <div className="flex flex-col gap-8">
           <Heading eyebrow={s(c, "eyebrow")} title={s(c, "title")} body={s(c, "body")} />
@@ -258,10 +258,10 @@ export function Closing({ c, settings }: { c: C; settings: Settings }) {
       <Reveal className="overflow-hidden rounded-[40px] bg-ink text-ground">
         <div className="grid gap-12 p-8 md:p-16 lg:grid-cols-[1.4fr_1fr] lg:gap-20">
           <div className="flex flex-col gap-6">
-            <h2 className="font-display text-[56px] leading-[0.95] tracking-[-0.04em] md:text-[104px]">{s(c, "title")}</h2>
+            <h2 data-split className="font-display text-[56px] leading-[0.95] tracking-[-0.04em] md:text-[104px]">{s(c, "title")}</h2>
             <p className="max-w-[520px] text-[17px] leading-7 text-[#CFC5B6] md:text-lg">{s(c, "body")}</p>
             <div className="flex flex-col gap-3 sm:flex-row">
-              <LinkButton href="/menu" size="lg">{s(c, "cta")}</LinkButton>
+              <LinkButton href="/menu" size="lg" data-magnetic>{s(c, "cta")}</LinkButton>
               <Link href="/plans" className="inline-flex h-14 items-center justify-center rounded-[12px] border border-white/30 px-7 font-semibold text-ground hover:bg-white/10">{s(c, "secondaryCta")}</Link>
             </div>
           </div>
