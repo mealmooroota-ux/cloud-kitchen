@@ -5,8 +5,15 @@ import { Banner, Button, Field } from "@/components/ui";
 
 type Mode = "signin" | "signup" | "forgot";
 
+/** Never leave the button spinning: give up after 20 s with a clear message. */
+function withTimeout<T>(p: Promise<T>, ms = 20000): Promise<T> {
+  return Promise.race([p, new Promise<T>((_, rej) => setTimeout(() => rej(new Error("timeout")), ms))]);
+}
+
 function explain(message = "", status?: number) {
   const m = message.toLowerCase();
+  if (m === "timeout" || status === 504) return "The sign-in service is taking too long. This usually means the email settings in Supabase need attention. Try again in a minute.";
+  if (m.includes("error sending") || m.includes("smtp")) return "We couldn’t send the email. The site’s email settings need attention; please contact us.";
   if (m.includes("invalid login credentials")) return "That email and password don’t match. Try again or reset your password.";
   if (m.includes("email not confirmed")) return "Please confirm your email first. Check your inbox for the link we sent.";
   if (m.includes("already registered") || m.includes("already been registered")) return "An account with this email already exists. Sign in instead.";
@@ -34,6 +41,9 @@ export function AuthForm({ next, staff = false }: { next: string; staff?: boolea
     if (error) { setBusy(false); setErr(explain(error.message, error.status)); }
   }
   async function submit(e: React.FormEvent<HTMLFormElement>) {
+    try { await run(e); } catch (x) { setBusy(false); setErr(explain(x instanceof Error ? x.message : "")); }
+  }
+  async function run(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     const f = new FormData(e.currentTarget);
     const email = String(f.get("email") ?? "").trim().toLowerCase();
@@ -41,20 +51,20 @@ export function AuthForm({ next, staff = false }: { next: string; staff?: boolea
     setBusy(true); setErr(null); setInfo(null);
     const sb = getBrowserClient();
     if (mode === "signin") {
-      const { error } = await sb.auth.signInWithPassword({ email, password });
+      const { error } = await withTimeout(sb.auth.signInWithPassword({ email, password }));
       setBusy(false);
       if (error) return setErr(explain(error.message, error.status));
       return window.location.assign(next);
     }
     if (mode === "signup") {
       if (password.length < 8) { setBusy(false); return setErr("Use at least 8 characters for your password."); }
-      const { data, error } = await sb.auth.signUp({ email, password, options: { emailRedirectTo: callback(next), data: { full_name: String(f.get("full_name") ?? "").trim() } } });
+      const { data, error } = await withTimeout(sb.auth.signUp({ email, password, options: { emailRedirectTo: callback(next), data: { full_name: String(f.get("full_name") ?? "").trim() } } }));
       setBusy(false);
       if (error) return setErr(explain(error.message, error.status));
       if (data.session) return window.location.assign(next);
       return setInfo(`We’ve sent a confirmation link to ${email}. Open it to finish creating your account.`);
     }
-    const { error } = await sb.auth.resetPasswordForEmail(email, { redirectTo: callback("/auth/reset") });
+    const { error } = await withTimeout(sb.auth.resetPasswordForEmail(email, { redirectTo: callback("/auth/reset") }));
     setBusy(false);
     if (error) return setErr(explain(error.message, error.status));
     setInfo(`If an account exists for ${email}, a password reset link is on its way.`);
