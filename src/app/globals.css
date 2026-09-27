@@ -1,0 +1,60 @@
+@import "tailwindcss";
+
+@theme {
+  --color-ground: #F7F2E9;
+  --color-surface: #FFFDF9;
+  --color-raised: #EFE7DA;
+  --color-line: #E3D9C9;
+  --color-line-strong: #968874;
+  --color-ink: #1F1B16;
+  --color-muted: #645A4E;
+  --color-brand: #B4502D;
+  --color-brand-hover: #933F22;
+  --color-on-brand: #FFFFFF;
+  --color-brand-soft: #F6E1D6;
+  --color-herb: #3F6B45;
+  --color-herb-soft: #E3EDDF;
+  --color-saffron: #9A6A0F;
+  --color-saffron-soft: #F7ECD3;
+  --color-success: #16794F;
+  --color-success-soft: #E1F2E8;
+  --color-warning: #9A5B00;
+  --color-warning-soft: #FDF0D9;
+  --color-danger: #B42318;
+  --color-danger-soft: #FCE6E4;
+  --color-info: #1D5FD1;
+  --color-info-soft: #E4EEFD;
+  --color-veg: #1F8A4C;
+  --color-nonveg: #A3321F;
+
+  --font-display: var(--font-fraunces), "Iowan Old Style", Georgia, serif;
+  --font-sans: var(--font-geist-sans), "Helvetica Neue", system-ui, sans-serif;
+  --font-mono: var(--font-geist-mono), ui-monospace, Menlo, monospace;
+
+  --radius-xs: 4px; --radius-sm: 8px; --radius-md: 12px; --radius-lg: 20px; --radius-xl: 32px;
+  --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);
+}
+
+@layer base {
+  html { background: var(--color-ground); color: var(--color-ink); -webkit-text-size-adjust: 100%; }
+  body { font-family: var(--font-sans); font-size: 16px; line-height: 1.5; text-rendering: optimizeLegibility; -webkit-font-smoothing: antialiased; }
+  :focus-visible { outline: 2px solid var(--color-brand); outline-offset: 2px; border-radius: 4px; }
+  ::selection { background: var(--color-brand-soft); }
+  input, select, textarea { font-size: 16px; } /* no iOS zoom */
+  h1, h2, h3 { text-wrap: balance; }
+  p { text-wrap: pretty; }
+}
+
+.font-display { font-family: var(--font-display); font-optical-sizing: auto; letter-spacing: -0.02em; }
+.tabular { font-variant-numeric: tabular-nums; }
+.lenis.lenis-smooth { scroll-behavior: auto !important; }
+.lenis.lenis-stopped { overflow: hidden; }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; transition-duration: 0.01ms !important; scroll-behavior: auto !important; }
+}
+
+@keyframes steam { 0% { transform: translateY(0) scaleX(1); opacity: 0 } 20% { opacity: .5 } 100% { transform: translateY(-60px) scaleX(1.6); opacity: 0 } }
+@keyframes pulse-dot { 0%, 100% { box-shadow: 0 0 0 0 rgba(180, 80, 45, .35) } 50% { box-shadow: 0 0 0 8px rgba(180, 80, 45, 0) } }
+.animate-pulse-dot { animation: pulse-dot 1.8s var(--ease-in-out) infinite; }
