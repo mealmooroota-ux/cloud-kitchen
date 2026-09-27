@@ -133,10 +133,33 @@ export const DEFAULT_SECTIONS: Record<string, Record<string, unknown>> = {
     team: { title: "The people who cook for you", body: "Our cooks come from home kitchens across South and North India. Each one owns a handful of recipes and cooks them every day, so your dal tastes the same on Monday as it did last Friday." },
   },
 };
+export const EXPERIENCE_DEFAULTS: Record<string, unknown> = {
+  tagline: "Your everyday meal · a story in motion",
+  scrollCue: "Scroll to begin",
+  dayLabel: "A day in our kitchen",
+  ingredients: "Toor dal, Curry leaves, Jeera, Ghee, Ragi, Tomato, Coconut, Byadgi chilli, Hing, Coriander, Jaggery, Mustard seeds, Tamarind, Basmati",
+  ingredientsTitle: "Fourteen ingredients. One honest bowl.",
+  cookerBandA: "Slow-cooked · Small batches · Slow-cooked · Small batches ·",
+  cookerBandB: "Never reheated · Sealed for you · Never reheated · Sealed for you ·",
+  cookerLine: "Six layers, six promises. Every part of our kitchen is there on purpose.",
+  galleryEyebrow: "On the stove today",
+  galleryTitle: "Made this morning.",
+  galleryBody: "Keep scrolling. Every dish here was on our stove today.",
+  manifesto: "We believe everyday food should taste like home. Cooked fresh, in small batches, by people who care. No shortcuts, no reheating, no packets. Just a good meal, on time, every single day.",
+  routeEyebrow: "Stove to door",
+  routeMinutes: "32",
+  routeSteps: "Cooked the moment you order, Sealed at the pass, Rider on the way routed live, At your door still hot",
+  deliveredLabel: "Delivered",
+  finalTitle: "Your everyday meal.",
+  finalCta: "Order tonight’s dinner",
+  finalSecondaryCta: "Start a meal plan",
+};
+DEFAULT_SECTIONS.experience_page = EXPERIENCE_DEFAULTS;
+
 export const HOME_ORDER = ["hero", "marquee", "cooker", "homemade", "plate", "healthy", "plans", "plans_how", "signatures", "how", "faq", "closing"];
 export const DEFAULT_ORDER = HOME_ORDER;
 /** CMS sections that are not on the homepage (edited in the same admin screen). */
-export const OTHER_SECTIONS = ["kitchen_page"];
+export const OTHER_SECTIONS = ["kitchen_page", "experience_page"];
 
 export const DEFAULT_LAYERS: CookerLayer[] = [
   { key: "vent", position: 1, name: "Steam vent", title: "Cooked to order, never reheated", body: "Your dish starts cooking when you order it. Nothing waits under a heat lamp." },

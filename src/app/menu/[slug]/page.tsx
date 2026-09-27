@@ -8,7 +8,10 @@ import { ProductConfigurator } from "@/components/cart/ProductConfigurator";
 import { getProduct } from "@/lib/queries";
 import { cld } from "@/lib/cloudinary";
 
-export const revalidate = 30;
+export const revalidate = 600;
+// Dish pages are built on first visit, then served from the cache (refreshed when the dish is edited).
+export const dynamicParams = true;
+export async function generateStaticParams() { return []; }
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
   const p = await getProduct((await params).slug);

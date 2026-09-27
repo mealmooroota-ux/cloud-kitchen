@@ -8,7 +8,7 @@ import { getSettings } from "@/lib/settings";
 import { DEFAULT_SECTIONS, list } from "@/lib/defaults";
 import { PHOTO } from "@/lib/photos";
 
-export const revalidate = 60;
+export const revalidate = 600;
 export const metadata: Metadata = { title: "Our kitchen", description: "Who cooks your MOOROOTA meals, where our ingredients come from, and how we keep the kitchen clean." };
 
 export default async function KitchenPage() {

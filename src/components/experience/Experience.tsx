@@ -7,21 +7,22 @@ import { LogoMark, MARK_BOWL, MARK_STEAM } from "@/components/brand/Logo";
 import { DishImage } from "@/components/ui/DishImage";
 import { btnClass } from "@/components/ui";
 import { useTier } from "@/components/three/useTier";
-import type { Item } from "@/lib/defaults";
+import { csv, type Item } from "@/lib/defaults";
 
 const CookerCanvas = dynamic(() => import("@/components/three/CookerCanvas"), { ssr: false });
 
 type Dish = { name: string; slug: string; image: string; veg: boolean };
-const INGREDIENTS = ["Toor dal", "Curry leaves", "Jeera", "Ghee", "Ragi", "Tomato", "Coconut", "Byadgi chilli", "Hing", "Coriander", "Jaggery", "Mustard seeds", "Tamarind", "Basmati"];
 const SKY = ["#2A2233", "#E9A873", "#F7F2E9", "#F3D9B1", "#E08A55", "#1F1B16"];
 const INK_ON = ["#FFF8EE", "#1F1B16", "#1F1B16", "#1F1B16", "#1F1B16", "#FFF8EE"];
-const MANIFESTO = "We believe everyday food should taste like home. Cooked fresh, in small batches, by people who care. No shortcuts, no reheating, no packets. Just a good meal, on time, every single day.";
 
-export function Experience({ dishes, timeline }: { dishes: Dish[]; timeline: Item[] }) {
+export function Experience({ c, dishes, timeline }: { c: Record<string, unknown>; dishes: Dish[]; timeline: Item[] }) {
+  const t = (k: string) => String(c[k] ?? "");
+  const INGREDIENTS = csv(c.ingredients);
+  const startMinutes = Math.max(1, Number(c.routeMinutes) || 32);
   const tier = useTier();
   const root = useRef<HTMLDivElement>(null);
   const cookerProgress = useRef(0);
-  const [eta, setEta] = useState(32);
+  const [eta, setEta] = useState(startMinutes);
   const motion = tier === "full" || tier === "lite";
   const times = timeline.length ? timeline : [{ title: "5:30 AM", body: "The market run." }];
 
@@ -91,7 +92,7 @@ export function Experience({ dishes, timeline }: { dishes: Dish[]; timeline: Ite
         gsap.fromTo(mani.words, { opacity: 0.12 }, { opacity: 1, stagger: 0.1, ease: "none", scrollTrigger: { trigger: q(".xp-mani"), start: "top top", end: "+=180%", scrub: 1, pin: true } });
 
         // ---------- 6. Stove to door: the route draws, the rider follows, the ETA counts down ----------
-        const eta0 = { v: 32 };
+        const eta0 = { v: startMinutes };
         const ride = gsap.timeline({ scrollTrigger: { trigger: q(".xp-route"), start: "top top", end: "+=240%", scrub: 1, pin: true } });
         ride.fromTo(q("#xp-road"), { drawSVG: "0%" }, { drawSVG: "100%", duration: 1, ease: "none" }, 0)
           .to(q(".xp-rider"), { motionPath: { path: "#xp-road", align: "#xp-road", alignOrigin: [0.5, 0.5], autoRotate: false }, duration: 1, ease: "none" }, 0)
@@ -109,7 +110,7 @@ export function Experience({ dishes, timeline }: { dishes: Dish[]; timeline: Ite
       revert = () => ctx.revert();
     })();
     return () => revert();
-  }, [motion, times.length]);
+  }, [motion, times.length, startMinutes, INGREDIENTS.length]);
 
   const H = "font-display leading-[0.95] tracking-[-0.04em]";
   return (
@@ -121,8 +122,8 @@ export function Experience({ dishes, timeline }: { dishes: Dish[]; timeline: Ite
           <div className="xp-prologue-inner flex flex-col items-center gap-6 px-4 text-center">
             <LogoMark size={132} tone="onDark" className="xp-logo" />
             <h1 className={`xp-name ${H} whitespace-nowrap text-[15vw] font-semibold tracking-[0.04em] md:text-[150px] md:tracking-[0.06em]`}>MOOROOTA</h1>
-            <p className="xp-tag text-sm font-semibold uppercase tracking-[0.32em] text-[#E2B85A]">Your everyday meal · a story in motion</p>
-            <p className="xp-cue mt-8 flex flex-col items-center gap-2 text-sm text-[#CFC5B6]">Scroll to begin<span className="block h-10 w-px animate-pulse bg-[#CFC5B6]" /></p>
+            <p className="xp-tag text-sm font-semibold uppercase tracking-[0.32em] text-[#E2B85A]">{t("tagline")}</p>
+            <p className="xp-cue mt-8 flex flex-col items-center gap-2 text-sm text-[#CFC5B6]">{t("scrollCue")}<span className="block h-10 w-px animate-pulse bg-[#CFC5B6]" /></p>
           </div>
         </section>
 
@@ -133,7 +134,7 @@ export function Experience({ dishes, timeline }: { dishes: Dish[]; timeline: Ite
           </svg>
           <div className="xp-sun absolute left-0 top-0 size-24 rounded-full bg-[#E2B85A] shadow-[0_0_120px_40px_rgba(226,184,90,.45)] md:size-36" aria-hidden="true" />
           <div className="relative mx-auto grid h-full max-w-[1320px] items-center px-4 md:px-8">
-            <p className="absolute left-4 top-24 text-sm font-semibold uppercase tracking-[0.3em] opacity-70 md:left-8">A day in our kitchen</p>
+            <p className="absolute left-4 top-24 text-sm font-semibold uppercase tracking-[0.3em] opacity-70 md:left-8">{t("dayLabel")}</p>
             {times.map((t, i) => (
               <div key={i} className="xp-slot absolute inset-x-4 flex flex-col gap-4 md:inset-x-8" style={{ opacity: motion ? 0 : 1, position: motion ? "absolute" : "relative" }}>
                 <span className={`${H} tabular text-[22vw] font-light md:text-[15vw]`}>{t.title}</span>
@@ -151,30 +152,30 @@ export function Experience({ dishes, timeline }: { dishes: Dish[]; timeline: Ite
               <path className="logo-bowl" d={MARK_BOWL} fill="var(--color-brand)" />
               <path className="logo-steam" d={MARK_STEAM} fill="none" stroke="var(--color-ink)" strokeWidth="5" strokeLinecap="round" strokeLinejoin="round" />
             </svg>
-            <h2 className={`xp-ing-title ${H} max-w-[900px] px-4 text-[44px] md:text-[80px]`}>Fourteen ingredients. One honest bowl.</h2>
+            <h2 className={`xp-ing-title ${H} max-w-[900px] px-4 text-[44px] md:text-[80px]`}>{t("ingredientsTitle")}</h2>
           </div>
         </section>
 
         {/* 3. The cooker */}
         <section className="xp-cook relative h-dvh overflow-hidden bg-raised">
           <div className="pointer-events-none absolute inset-x-0 top-[12%] flex flex-col gap-2" aria-hidden="true">
-            <p className={`xp-band-a ${H} whitespace-nowrap text-[18vw] text-transparent [-webkit-text-stroke:1.5px_var(--color-line-strong)]`}>Slow-cooked · Small batches · Slow-cooked · Small batches ·</p>
-            <p className={`xp-band-b ${H} whitespace-nowrap text-[18vw] text-brand/15`}>Never reheated · Sealed for you · Never reheated · Sealed for you ·</p>
+            <p className={`xp-band-a ${H} whitespace-nowrap text-[18vw] text-transparent [-webkit-text-stroke:1.5px_var(--color-line-strong)]`}>{t("cookerBandA")}</p>
+            <p className={`xp-band-b ${H} whitespace-nowrap text-[18vw] text-brand/15`}>{t("cookerBandB")}</p>
           </div>
           <div className="absolute inset-0">
             {tier === "full" ? <CookerCanvas progress={cookerProgress} framing="story" className="absolute inset-0" />
               : <Image src="/images/cooker-exploded.webp" alt="" width={800} height={991} className="absolute left-1/2 top-1/2 h-[80%] w-auto -translate-x-1/2 -translate-y-1/2" />}
           </div>
-          <p className="absolute bottom-10 left-1/2 w-full max-w-[560px] -translate-x-1/2 px-4 text-center text-lg text-muted md:text-xl">Six layers, six promises. Every part of our kitchen is there on purpose.</p>
+          <p className="absolute bottom-10 left-1/2 w-full max-w-[560px] -translate-x-1/2 px-4 text-center text-lg text-muted md:text-xl">{t("cookerLine")}</p>
         </section>
 
         {/* 4. Gallery */}
         <section className="xp-gallery relative overflow-hidden bg-ink text-[#FFF8EE]">
           <div className={`xp-track flex h-dvh items-center gap-6 px-[6vw] md:gap-10 ${motion ? "w-max" : "flex-wrap h-auto py-20"}`}>
             <div className="flex w-[80vw] shrink-0 flex-col gap-5 md:w-[34vw]">
-              <p className="text-sm font-semibold uppercase tracking-[0.3em] text-[#E2B85A]">On the stove today</p>
-              <h2 className={`${H} text-[56px] md:text-[96px]`}>Made this morning.</h2>
-              <p className="max-w-sm text-lg text-[#CFC5B6]">Keep scrolling. Every dish here was on our stove today.</p>
+              <p className="text-sm font-semibold uppercase tracking-[0.3em] text-[#E2B85A]">{t("galleryEyebrow")}</p>
+              <h2 className={`${H} text-[56px] md:text-[96px]`}>{t("galleryTitle")}</h2>
+              <p className="max-w-sm text-lg text-[#CFC5B6]">{t("galleryBody")}</p>
             </div>
             {dishes.map((d, i) => (
               <Link key={d.slug} href={`/menu/${d.slug}`} className="xp-card group relative block h-[62vh] w-[72vw] shrink-0 overflow-hidden rounded-[32px] md:w-[30vw]">
@@ -192,17 +193,17 @@ export function Experience({ dishes, timeline }: { dishes: Dish[]; timeline: Ite
 
         {/* 5. Manifesto */}
         <section className="xp-mani grid min-h-dvh place-items-center bg-ground px-4 py-24">
-          <p className={`xp-manifesto ${H} max-w-[1100px] text-[40px] md:text-[76px]`}>{MANIFESTO}</p>
+          <p className={`xp-manifesto ${H} max-w-[1100px] text-[40px] md:text-[76px]`}>{t("manifesto")}</p>
         </section>
 
         {/* 6. Stove to door */}
         <section className="xp-route relative h-dvh overflow-hidden bg-surface">
           <div className="mx-auto grid h-full max-w-[1320px] items-center gap-6 px-4 py-24 md:grid-cols-[1fr_1.6fr] md:px-8">
             <div className="flex flex-col gap-6">
-              <p className="text-sm font-semibold uppercase tracking-[0.3em] text-saffron">Stove to door</p>
+              <p className="text-sm font-semibold uppercase tracking-[0.3em] text-saffron">{t("routeEyebrow")}</p>
               <p className={`${H} tabular text-[96px] md:text-[160px]`} aria-live="off">{eta}<span className="text-[0.35em] text-muted"> min</span></p>
               <ol className="flex flex-col gap-3 text-lg">
-                {["Cooked the moment you order", "Sealed at the pass", "Rider on the way, routed live", "At your door, still hot"].map((s, i) => <li key={s} className="xp-route-step flex items-center gap-3"><span className="tabular font-mono text-sm text-brand">0{i + 1}</span>{s}</li>)}
+                {csv(c.routeSteps).map((s, i) => <li key={s} className="xp-route-step flex items-center gap-3"><span className="tabular font-mono text-sm text-brand">0{i + 1}</span>{s}</li>)}
               </ol>
             </div>
             <div className="relative">
@@ -215,7 +216,7 @@ export function Experience({ dishes, timeline }: { dishes: Dish[]; timeline: Ite
                 <g transform="translate(686 40)"><path d="M4 26 L26 6 L48 26 V52 H4 Z" fill="var(--color-ink)" /><rect x="20" y="34" width="12" height="18" fill="#FFF8EE" /></g>
                 <circle className="xp-rider" cx="90" cy="430" r="14" fill="var(--color-ink)" stroke="#FFF8EE" strokeWidth="4" />
               </svg>
-              <span className="xp-delivered absolute right-[4%] top-[2%] rounded-full bg-success px-4 py-2 text-sm font-semibold text-white" style={{ opacity: motion ? 0 : 1 }}>Delivered</span>
+              <span className="xp-delivered absolute right-[4%] top-[2%] rounded-full bg-success px-4 py-2 text-sm font-semibold text-white" style={{ opacity: motion ? 0 : 1 }}>{t("deliveredLabel")}</span>
             </div>
           </div>
         </section>
@@ -224,10 +225,10 @@ export function Experience({ dishes, timeline }: { dishes: Dish[]; timeline: Ite
         <section className="xp-end relative grid min-h-dvh place-items-center overflow-hidden bg-brand px-4 py-24 text-[#FFF8EE]">
           <div className="flex flex-col items-center gap-8 text-center">
             <LogoMark size={96} tone="light" />
-            <h2 className={`xp-final ${H} text-[64px] md:text-[150px]`}>Your everyday meal.</h2>
+            <h2 className={`xp-final ${H} text-[64px] md:text-[150px]`}>{t("finalTitle")}</h2>
             <div className="xp-end-cta flex flex-col gap-3 sm:flex-row">
-              <Link href="/menu" data-magnetic className="inline-flex h-14 items-center justify-center rounded-[12px] bg-[#FFF8EE] px-8 font-semibold text-ink hover:bg-white">Order tonight’s dinner</Link>
-              <Link href="/plans" data-magnetic className={btnClass("secondary", "lg", "border-[#FFF8EE]/50 bg-transparent text-[#FFF8EE] hover:bg-white/10")}>Start a meal plan</Link>
+              <Link href="/menu" data-magnetic className="inline-flex h-14 items-center justify-center rounded-[12px] bg-[#FFF8EE] px-8 font-semibold text-ink hover:bg-white">{t("finalCta")}</Link>
+              <Link href="/plans" data-magnetic className={btnClass("secondary", "lg", "border-[#FFF8EE]/50 bg-transparent text-[#FFF8EE] hover:bg-white/10")}>{t("finalSecondaryCta")}</Link>
             </div>
           </div>
         </section>

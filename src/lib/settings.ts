@@ -1,7 +1,8 @@
 import "server-only";
-import { cache } from "react";
+import { unstable_cache } from "next/cache";
 import type { Settings } from "@/lib/types";
-import { createClient } from "@/lib/supabase/server";
+import { createPublicClient, PUBLIC_TAG } from "@/lib/supabase/public";
+import { env, isSupabaseConfigured } from "@/lib/env";
 
 export const DEFAULT_SETTINGS: Settings = {
   kitchen_name: "MOOROOTA", kitchen_address: null, kitchen_lat: 12.9716, kitchen_lng: 77.5946, delivery_radius_km: 7,
@@ -10,12 +11,13 @@ export const DEFAULT_SETTINGS: Settings = {
   support_phone: null, support_email: null, fssai_license: null,
 };
 
-export const getSettings = cache(async (): Promise<Settings> => {
+/** Kitchen settings, cached and refreshed the moment an admin saves settings or toggles the kitchen. */
+const cachedSettings = () => unstable_cache(async (): Promise<Settings> => {
   try {
-    const supabase = await createClient();
-    const { data } = await supabase.from("settings").select("*").eq("id", 1).maybeSingle();
+    const { data } = await createPublicClient().from("settings").select("*").eq("id", 1).maybeSingle();
     return { ...DEFAULT_SETTINGS, ...(data ?? {}) } as Settings;
   } catch {
     return DEFAULT_SETTINGS;
   }
-});
+}, ["settings-v1", env.supabaseUrl ?? "none"], { tags: [PUBLIC_TAG], revalidate: 600 })();
+export const getSettings = (): Promise<Settings> => (isSupabaseConfigured() ? cachedSettings() : Promise.resolve(DEFAULT_SETTINGS));

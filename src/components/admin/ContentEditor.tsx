@@ -12,6 +12,7 @@ const TITLES: Record<string, string> = {
   hero: "Hero", marquee: "Dish ticker", cooker: "3D cooker story", homemade: "Our food", plate: "What’s on your plate", healthy: "Healthy & light",
   plans: "Meal plans", plans_how: "How meal plans work", signatures: "Signature dishes", how: "How ordering works", faq: "FAQ", closing: "Closing section",
   kitchen_page: "Our kitchen page",
+  experience_page: "Experience page (/experience)",
 };
 const label = (k: string) => k.replace(/_/g, " ").replace(/([A-Z])/g, " $1").replace(/^./, (x) => x.toUpperCase());
 type Item = { title: string; body: string };
@@ -27,12 +28,12 @@ export function SectionEditor({ sectionKey, enabled: e0, position: p0, content: 
   const objFields = Object.keys(c).filter((k) => c[k] && typeof c[k] === "object" && !Array.isArray(c[k]));
   return (
     <details className="rounded-[12px] border border-line bg-surface" open={sectionKey === "hero"}>
-      <summary className="flex cursor-pointer items-center justify-between p-4 font-semibold">{TITLES[sectionKey] ?? sectionKey}<span className="text-sm font-normal text-muted">{sectionKey === "kitchen_page" ? "/kitchen" : enabled ? `Shown · position ${position}` : "Hidden"}</span></summary>
+      <summary className="flex cursor-pointer items-center justify-between p-4 font-semibold">{TITLES[sectionKey] ?? sectionKey}<span className="text-sm font-normal text-muted">{sectionKey === "kitchen_page" ? "/kitchen" : sectionKey === "experience_page" ? "/experience" : enabled ? `Shown · position ${position}` : "Hidden"}</span></summary>
       <form className="flex flex-col gap-4 border-t border-line p-4" onSubmit={(e) => { e.preventDefault(); run(() => saveSection(sectionKey, c, enabled, position)); }}>
-        {sectionKey !== "kitchen_page" && <div className="flex gap-5"><label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={enabled} onChange={(e) => setEnabled(e.target.checked)} className="size-5 accent-[var(--color-brand)]" />Show this section</label>
+        {!["kitchen_page", "experience_page"].includes(sectionKey) && <div className="flex gap-5"><label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={enabled} onChange={(e) => setEnabled(e.target.checked)} className="size-5 accent-[var(--color-brand)]" />Show this section</label>
           <label className="flex items-center gap-2 text-sm">Position<input type="number" value={position} onChange={(e) => setPosition(Number(e.target.value))} className={`${inp} w-20`} /></label></div>}
         {textFields.map((k) => (
-          <L key={k} label={label(k) + (["chips", "perks", "promises"].includes(k) ? " (comma separated)" : "")}>
+          <L key={k} label={label(k) + (["chips", "perks", "promises", "ingredients", "routeSteps"].includes(k) ? " (comma separated)" : "")}>
             {String(c[k]).length > 80 || k === "title" ? <textarea rows={k === "title" ? 2 : 3} value={String(c[k])} onChange={(e) => set(k, e.target.value)} className="rounded-[8px] border border-line-strong bg-raised p-3 text-sm font-normal" /> : <input value={String(c[k])} onChange={(e) => set(k, e.target.value)} className={inp} />}
           </L>
         ))}

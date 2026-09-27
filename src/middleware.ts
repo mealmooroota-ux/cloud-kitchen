@@ -30,6 +30,8 @@ export async function middleware(request: NextRequest) {
   return response;
 }
 
+// Only pages that need an account run this check. Public pages (home, menu, kitchen, experience, cart…)
+// skip it entirely, so they can be served straight from the cache.
 export const config = {
-  matcher: ["/((?!_next/static|_next/image|favicon.ico|models|images|api/payments/webhook).*)"],
+  matcher: ["/account/:path*", "/orders/:path*", "/checkout/:path*", "/plans", "/admin/:path*"],
 };

@@ -1,6 +1,7 @@
 "use server";
 import { z } from "zod";
-import { revalidatePath } from "next/cache";
+import { revalidatePath, revalidateTag } from "next/cache";
+import { PUBLIC_TAG } from "@/lib/supabase/public";
 import { requireStaff } from "@/lib/auth";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { recalcEta } from "@/lib/orders";
@@ -79,6 +80,7 @@ export async function setAvailability(productId: string, available: boolean): Pr
   if (!env.supabaseServiceKey) return NO_KEY;
   await createAdminClient().from("products").update({ is_available: available }).eq("id", productId);
   revalidatePath("/admin/products"); revalidatePath("/menu"); revalidatePath("/");
+  revalidateTag(PUBLIC_TAG);
   return { ok: true };
 }
 const Addons = z.array(z.object({ id: z.string().optional(), name: z.string().min(1), min_select: z.number().int().min(0), max_select: z.number().int().min(1),
@@ -107,6 +109,7 @@ export async function saveProduct(id: string | null, formData: FormData): Promis
     if (grp && g.addons.length) await db.from("addons").insert(g.addons.map((a, ai) => ({ group_id: grp.id, name: a.name, price_paise: a.price_paise, is_available: a.is_available, position: ai })));
   }
   revalidatePath("/admin/products"); revalidatePath("/menu"); revalidatePath("/");
+  revalidateTag(PUBLIC_TAG);
   return { ok: true, id: pid };
 }
 export async function addMedia(productId: string, publicId: string, kind: "image" | "video", alt: string): Promise<R> {
@@ -116,6 +119,7 @@ export async function addMedia(productId: string, publicId: string, kind: "image
   const { count } = await db.from("product_media").select("id", { count: "exact", head: true }).eq("product_id", productId);
   await db.from("product_media").insert({ product_id: productId, public_id: publicId, kind, alt, position: count ?? 0 });
   revalidatePath(`/admin/products/${productId}`); revalidatePath("/menu");
+  revalidateTag(PUBLIC_TAG);
   return { ok: true };
 }
 export async function removeMedia(mediaId: string, productId: string): Promise<R> {
@@ -123,6 +127,7 @@ export async function removeMedia(mediaId: string, productId: string): Promise<R
   if (!env.supabaseServiceKey) return NO_KEY;
   await createAdminClient().from("product_media").delete().eq("id", mediaId);
   revalidatePath(`/admin/products/${productId}`);
+  revalidateTag(PUBLIC_TAG);
   return { ok: true };
 }
 export async function makeCover(mediaId: string, productId: string): Promise<R> {
@@ -132,6 +137,7 @@ export async function makeCover(mediaId: string, productId: string): Promise<R> 
   await db.from("product_media").update({ position: 1000 }).eq("product_id", productId).neq("id", mediaId);
   await db.from("product_media").update({ position: 0 }).eq("id", mediaId);
   revalidatePath(`/admin/products/${productId}`);
+  revalidateTag(PUBLIC_TAG);
   return { ok: true };
 }
 export async function saveCategory(formData: FormData): Promise<R> {
@@ -145,6 +151,7 @@ export async function saveCategory(formData: FormData): Promise<R> {
   const { error } = id ? await db.from("categories").update(row).eq("id", id) : await db.from("categories").insert(row);
   if (error) return { ok: false, error: "Couldn’t save the category." };
   revalidatePath("/admin/categories"); revalidatePath("/menu");
+  revalidateTag(PUBLIC_TAG);
   return { ok: true };
 }
 export async function deleteCategory(id: string): Promise<R> {
@@ -152,6 +159,7 @@ export async function deleteCategory(id: string): Promise<R> {
   if (!env.supabaseServiceKey) return NO_KEY;
   await createAdminClient().from("categories").delete().eq("id", id);
   revalidatePath("/admin/categories");
+  revalidateTag(PUBLIC_TAG);
   return { ok: true };
 }
 
@@ -181,6 +189,7 @@ export async function savePlan(id: string | null, formData: FormData): Promise<R
     await db.from("meal_plan_prices").upsert({ plan_id: pid, duration_days: d, label: d === 7 ? "1 week" : d === 30 ? "1 month" : "3 months", veg_price_paise: paise(veg), nonveg_price_paise: nonveg ? paise(nonveg) : null, is_visible: bool(formData.get(`visible_${d}`)) }, { onConflict: "plan_id,duration_days" });
   }
   revalidatePath("/admin/plans"); revalidatePath("/plans"); revalidatePath("/");
+  revalidateTag(PUBLIC_TAG);
   return { ok: true, id: pid };
 }
 export async function savePlanMenu(planId: string, week: number, formData: FormData): Promise<R> {
@@ -198,6 +207,7 @@ export async function savePlanMenu(planId: string, week: number, formData: FormD
   const keep = rows.filter((r) => r.product_id || r.custom_name);
   if (keep.length) await db.from("plan_menu").insert(keep);
   revalidatePath(`/admin/plans/${planId}`); revalidatePath("/plans");
+  revalidateTag(PUBLIC_TAG);
   return { ok: true };
 }
 
@@ -208,6 +218,7 @@ export async function saveSection(key: string, content: Record<string, unknown>,
   const { error } = await createAdminClient().from("site_sections").upsert({ key, content, is_enabled: enabled, position, updated_at: new Date().toISOString(), updated_by: user.id });
   if (error) return { ok: false, error: "Couldn’t save the section." };
   revalidatePath("/"); revalidatePath("/admin/content");
+  revalidateTag(PUBLIC_TAG);
   return { ok: true };
 }
 export async function saveLayers(formData: FormData): Promise<R> {
@@ -218,6 +229,7 @@ export async function saveLayers(formData: FormData): Promise<R> {
     await db.from("cooker_layers").upsert({ key, position: ["vent", "lid", "rice", "pot", "plate", "base"].indexOf(key) + 1, name: text(formData.get(`${key}_name`)), title: text(formData.get(`${key}_title`)), body: text(formData.get(`${key}_body`)) });
   }
   revalidatePath("/");
+  revalidateTag(PUBLIC_TAG);
   return { ok: true };
 }
 export async function saveSettings(formData: FormData): Promise<R> {
@@ -236,6 +248,7 @@ export async function saveSettings(formData: FormData): Promise<R> {
   const { error } = await createAdminClient().from("settings").update(row).eq("id", 1);
   if (error) return { ok: false, error: "Couldn’t save settings." };
   revalidatePath("/", "layout");
+  revalidateTag(PUBLIC_TAG);
   return { ok: true };
 }
 export async function setKitchenOpen(open: boolean): Promise<R> {
@@ -243,6 +256,7 @@ export async function setKitchenOpen(open: boolean): Promise<R> {
   if (!env.supabaseServiceKey) return NO_KEY;
   await createAdminClient().from("settings").update({ is_open: open }).eq("id", 1);
   revalidatePath("/", "layout");
+  revalidateTag(PUBLIC_TAG);
   return { ok: true };
 }
 export async function saveCoupon(formData: FormData): Promise<R> {

@@ -2,12 +2,11 @@ import type { Metadata } from "next";
 import { Shell } from "@/components/site/Shell";
 import { PlanBuilder } from "@/components/site/PlanBuilder";
 import { Empty } from "@/components/ui";
-import { getHome, getPlans } from "@/lib/queries";
+import { getHome, getPlanWeek, getPlans } from "@/lib/queries";
 import { Faq, PlansHow, Plate } from "@/components/home/Sections";
 import { DEFAULT_SECTIONS } from "@/lib/defaults";
 import { getSessionUser } from "@/lib/auth";
 import { getSettings } from "@/lib/settings";
-import { createClient } from "@/lib/supabase/server";
 import type { Address } from "@/lib/types";
 
 export const dynamic = "force-dynamic";
@@ -21,11 +20,7 @@ export default async function PlansPage({ searchParams }: { searchParams: Promis
   let menu: { weekday: number; meal: string; name: string }[] = [];
   if (session.user) addresses = ((await session.supabase.from("addresses").select("*").order("is_default", { ascending: false })).data ?? []) as Address[];
   const chosen = plans.find((p) => p.slug === plan) ?? plans.find((p) => p.highlight) ?? plans[0];
-  if (chosen) {
-    const db = await createClient();
-    const { data } = await db.from("plan_menu").select("weekday, meal, custom_name, products(name)").eq("plan_id", chosen.id).eq("week", 1);
-    menu = (data ?? []).map((r) => ({ weekday: r.weekday, meal: r.meal, name: r.custom_name ?? (r.products as unknown as { name: string } | null)?.name ?? "" }));
-  }
+  if (chosen) menu = await getPlanWeek(chosen.id);
   return (
     <Shell cartBar={false}>
       <div className="mx-auto max-w-[1320px] px-4 pb-8 pt-8 md:px-8 md:pt-12">

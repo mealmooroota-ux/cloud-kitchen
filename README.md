@@ -179,3 +179,9 @@ The MOOROOTA mark is an "m" made of rising steam over a bowl: fresh, hot, home-c
 - `/experience`: a scroll-driven story in seven chapters (GSAP ScrollTrigger, SplitText, DrawSVG, MotionPath, and the 3D cooker).
 - Site-wide: headings rise word by word (`data-split`), photos drift (`data-parallax`), buttons are magnetic (`data-magnetic`), hero entrance and the logo's steam drawing itself.
 - All motion is turned off for visitors who prefer reduced motion; low-power devices get lighter versions.
+
+## Speed
+
+- Public pages (home, dishes, Our kitchen, Experience, cart, policies) are pre-built and cached, and served in milliseconds. Admin saves refresh the cache instantly (`revalidateTag("public")`), and it also refreshes itself every 10 minutes.
+- Sign-in checks run only on pages that need an account (`src/middleware.ts`).
+- **Put your server next to your database.** In Supabase → Project Settings → General, note the **Region**, then in Vercel → Settings → Functions → **Function Region** pick the closest match (e.g. Supabase "South Asia (Mumbai)" → Vercel **Mumbai, bom1**; Supabase "East US" → **Washington, iad1**). A mismatch adds a round trip across the world to every database call.

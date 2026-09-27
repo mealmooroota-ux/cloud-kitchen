@@ -7,7 +7,7 @@ import { DEFAULT_LAYERS, DEFAULT_SECTIONS, HOME_ORDER } from "@/lib/defaults";
 import { siteUrl } from "@/lib/site";
 import { BRAND } from "@/lib/brand";
 
-export const revalidate = 60;
+export const revalidate = 600;
 
 export default async function Home() {
   const [{ sections, layers }, { products }, plans, settings] = await Promise.all([getHome(), getMenu(), getPlans(), getSettings()]);

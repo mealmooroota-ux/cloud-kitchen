@@ -5,7 +5,7 @@ import { ProductCard } from "@/components/site/ProductCard";
 import { Empty, VegMark } from "@/components/ui";
 import { getMenu } from "@/lib/queries";
 
-export const revalidate = 30;
+export const revalidate = 600;
 export const metadata: Metadata = { title: "Menu", description: "Homemade, healthy dishes cooked to order. Updated live by our kitchen." };
 
 export default async function MenuPage({ searchParams }: { searchParams: Promise<{ c?: string; veg?: string; q?: string; tag?: string }> }) {

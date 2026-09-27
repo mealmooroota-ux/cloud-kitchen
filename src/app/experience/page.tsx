@@ -6,7 +6,7 @@ import { PHOTO } from "@/lib/photos";
 import { DEFAULT_SECTIONS, list } from "@/lib/defaults";
 import { getHome } from "@/lib/queries";
 
-export const revalidate = 300;
+export const revalidate = 600;
 export const metadata: Metadata = {
   title: "The MOOROOTA experience",
   description: "A day in our kitchen, told in motion: from the 5:30 AM market run to your door.",
@@ -25,5 +25,6 @@ export default async function ExperiencePage() {
     { name: "Dal palak with phulkas", slug: "dal-palak-phulka", image: PHOTO.spinachRoti, veg: true },
   ];
   const day = { ...DEFAULT_SECTIONS.homemade, ...(sections.homemade?.content ?? {}) };
-  return <Shell cartBar={false}><Experience dishes={withPhoto.length >= 4 ? withPhoto : fallback} timeline={list(day.timeline)} /></Shell>;
+  const c = { ...DEFAULT_SECTIONS.experience_page, ...(sections.experience_page?.content ?? {}) };
+  return <Shell cartBar={false}><Experience c={c} dishes={withPhoto.length >= 4 ? withPhoto : fallback} timeline={list(day.timeline)} /></Shell>;
 }
