@@ -1,4 +1,4 @@
-const CLOUD = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME ?? "zu6iogvj";
+const CLOUD = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME || "zu6iogvj";
 
 /** Optimised Cloudinary URL: automatic format + quality, width-capped, smart crop. */
 export function cld(publicId: string, opts: { w?: number; h?: number; crop?: "fill" | "limit"; video?: boolean } = {}) {

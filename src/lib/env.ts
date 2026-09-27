@@ -1,4 +1,5 @@
 import "server-only";
+import { siteUrl } from "@/lib/site";
 
 function read(name: string): string | undefined {
   const v = process.env[name];
@@ -6,7 +7,7 @@ function read(name: string): string | undefined {
 }
 
 export const env = {
-  siteUrl: read("NEXT_PUBLIC_SITE_URL") ?? (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : "http://localhost:3000"),
+  siteUrl: siteUrl(),
   supabaseUrl: read("NEXT_PUBLIC_SUPABASE_URL"),
   supabaseAnonKey: read("NEXT_PUBLIC_SUPABASE_ANON_KEY"),
   supabaseServiceKey: read("SUPABASE_SERVICE_ROLE_KEY"),

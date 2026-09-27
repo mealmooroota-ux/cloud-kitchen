@@ -1,8 +1,9 @@
+import { siteUrl } from "@/lib/site";
 import type { MetadataRoute } from "next";
 import { getMenu } from "@/lib/queries";
 export const revalidate = 3600;
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-  const site = process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
+  const site = siteUrl();
   const { products } = await getMenu();
   return [
     { url: site, changeFrequency: "daily", priority: 1 },

@@ -29,7 +29,7 @@ export default async function ProductPage({ params }: { params: Promise<{ slug: 
           <nav aria-label="Breadcrumb" className="text-sm text-muted"><Link href="/menu" className="hover:text-ink">Menu</Link> / <span className="text-ink">{p.name}</span></nav>
           {video ? (
             <video className="aspect-[4/5] w-full rounded-[32px] bg-raised object-cover" autoPlay muted loop playsInline preload="none"
-              poster={`https://res.cloudinary.com/${process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME ?? "zu6iogvj"}/video/upload/so_0,f_auto,q_auto,w_900/${video.public_id}.jpg`}>
+              poster={`https://res.cloudinary.com/${process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME || "zu6iogvj"}/video/upload/so_0,f_auto,q_auto,w_900/${video.public_id}.jpg`}>
               <source src={cld(video.public_id, { w: 900, video: true })} />
             </video>
           ) : (

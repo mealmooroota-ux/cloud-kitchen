@@ -3,12 +3,13 @@ import localFont from "next/font/local";
 import { GeistSans } from "geist/font/sans";
 import { GeistMono } from "geist/font/mono";
 import "./globals.css";
+import { siteUrl } from "@/lib/site";
 import { SmoothScroll } from "@/components/site/SmoothScroll";
 
 // Self-hosted variable fonts: no third-party requests, works offline at build time.
 const fraunces = localFont({ src: "../fonts/Fraunces-opsz.woff2", variable: "--font-fraunces", weight: "100 900", display: "swap" });
 
-const site = process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
+const site = siteUrl();
 
 export const metadata: Metadata = {
   metadataBase: new URL(site),

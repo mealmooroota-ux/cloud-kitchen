@@ -8,6 +8,7 @@ import { getHome, getMenu, getPlans } from "@/lib/queries";
 import { getSettings } from "@/lib/settings";
 import { DEFAULT_LAYERS, DEFAULT_ORDER, DEFAULT_SECTIONS } from "@/lib/defaults";
 import { rupees } from "@/lib/format";
+import { siteUrl } from "@/lib/site";
 import type { MealPlan, Product } from "@/lib/types";
 
 export const revalidate = 60;
@@ -21,7 +22,7 @@ export default async function Home() {
   const content = (k: string): C => ({ ...DEFAULT_SECTIONS[k], ...(sections[k]?.content ?? {}) });
   const healthy = products.filter((p) => p.tags.includes(String(content("healthy").tag ?? "Healthy"))).slice(0, 4);
   const signatures = products.filter((p) => p.show_on_home).slice(0, 4);
-  const jsonLd = { "@context": "https://schema.org", "@type": "Restaurant", name: settings.kitchen_name, servesCuisine: ["Indian", "South Indian", "North Indian"], address: settings.kitchen_address ?? "Bengaluru", url: process.env.NEXT_PUBLIC_SITE_URL };
+  const jsonLd = { "@context": "https://schema.org", "@type": "Restaurant", name: settings.kitchen_name, servesCuisine: ["Indian", "South Indian", "North Indian"], address: settings.kitchen_address ?? "Bengaluru", url: siteUrl() };
 
   const render: Record<string, () => React.ReactNode> = {
     hero: () => <Hero c={content("hero")} settings={settings} />,
