@@ -13,7 +13,7 @@ export default async function PanelLayout({ children }: { children: React.ReactN
   return (
     <div className="flex min-h-dvh flex-col bg-ground md:flex-row">
       <aside className="flex shrink-0 flex-col gap-6 border-b border-line bg-surface p-4 md:sticky md:top-0 md:h-dvh md:w-60 md:border-b-0 md:border-r">
-        <Link href="/admin" className="px-3"><span className="font-display text-xl">Cloud Kitchen</span><span className="block text-xs text-muted">Kitchen console</span></Link>
+        <Link href="/admin" className="px-3"><span className="font-display text-xl tracking-[0.06em]">MOOROOTA</span><span className="block text-xs text-muted">Kitchen console</span></Link>
         <AdminNav role={role} />
         <div className="mt-auto hidden rounded-[12px] bg-raised p-3 text-sm md:block"><p className="font-semibold">{profile?.full_name || user.email}</p><p className="text-xs text-muted">{role}</p></div>
       </aside>

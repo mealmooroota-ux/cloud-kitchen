@@ -123,7 +123,7 @@ function PaymentPanel({ order, payment, onNewPayment }: { order: Order; payment:
       <div className="flex flex-col gap-4 rounded-[20px] border border-line bg-surface p-5">
         <p className="tabular font-mono text-3xl">{rupees(order.total_paise, { decimals: true })}</p>
         {paidReturn ? <Banner tone="info" title="Checking your payment with PhonePe">This usually takes a few seconds. Keep this page open.</Banner> : (
-          <a href={payment.redirect_url ?? "#"} className="inline-flex h-14 items-center justify-center rounded-[12px] bg-brand font-semibold text-on-brand">Pay with UPI, card or netbanking</a>
+          <a href={payment.redirect_url ?? "#"} className="inline-flex h-14 items-center justify-center rounded-[12px] bg-brand font-semibold text-on-brand">Continue to payment</a>
         )}
         <p className="text-xs text-muted">Secure checkout by PhonePe. We confirm your payment with PhonePe directly; screenshots are not needed.</p>
       </div>
@@ -135,8 +135,8 @@ function PaymentPanel({ order, payment, onNewPayment }: { order: Order; payment:
       {expired ? <RetryPayment orderId={order.id} onNewPayment={onNewPayment} label="Get a new QR" /> : (
         <>
           {/* eslint-disable-next-line @next/next/no-img-element -- generated data: URL */}
-          {qr && <img src={qr} alt={`UPI QR code for order ${order.order_number}`} width={220} height={220} className="rounded-[16px] border border-line bg-white p-2" />}
-          {isMobile && payment.qr_payload && <a href={payment.qr_payload} className="inline-flex h-14 w-full items-center justify-center rounded-[12px] bg-brand font-semibold text-on-brand">Open UPI app</a>}
+          {qr && <img src={qr} alt={`Payment QR code for order ${order.order_number}`} width={220} height={220} className="rounded-[16px] border border-line bg-white p-2" />}
+          {isMobile && payment.qr_payload && <a href={payment.qr_payload} className="inline-flex h-14 w-full items-center justify-center rounded-[12px] bg-brand font-semibold text-on-brand">Open payment app</a>}
           <p className="text-sm text-muted">Pay exactly {rupees(order.total_paise, { decimals: true })}. The note <span className="font-mono text-ink">Order {order.order_number}</span> is filled in for you.</p>
           {left != null && <p className="tabular text-sm text-muted">QR valid for {Math.floor(left / 60)}:{String(left % 60).padStart(2, "0")}</p>}
         </>
@@ -151,7 +151,7 @@ function RetryPayment({ orderId, onNewPayment, label = "Try paying again" }: { o
   const [err, setErr] = useState<string | null>(null);
   return (
     <div className="flex w-full flex-col gap-3">
-      {label === "Try paying again" && <Banner tone="danger" title="Payment failed">No money was taken. Try again or use another UPI app.</Banner>}
+      {label === "Try paying again" && <Banner tone="danger" title="Payment failed">No money was taken. Try again, or use a different payment app.</Banner>}
       {err && <Banner tone="danger" title={err} />}
       <Button size="lg" disabled={busy} onClick={async () => {
         setBusy(true); setErr(null);

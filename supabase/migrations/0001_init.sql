@@ -1,4 +1,4 @@
--- Cloud Kitchen: core schema, RLS, order state machine, CMS
+-- MOOROOTA: core schema, RLS, order state machine, CMS
 -- Run in Supabase SQL editor (or `supabase db push`). Idempotent-ish on a fresh project.
 
 create extension if not exists pgcrypto;
@@ -77,7 +77,7 @@ create trigger addresses_touch before update on public.addresses for each row ex
 -- ---------- settings (single row) ----------
 create table if not exists public.settings (
   id int primary key default 1 check (id = 1),
-  kitchen_name text not null default 'Cloud Kitchen',
+  kitchen_name text not null default 'MOOROOTA',
   kitchen_address text,
   kitchen_lat double precision not null default 12.9716,
   kitchen_lng double precision not null default 77.5946,
@@ -222,7 +222,7 @@ create table if not exists public.plan_menu (
 create sequence if not exists public.order_number_seq start 20000;
 create table if not exists public.orders (
   id uuid primary key default gen_random_uuid(),
-  order_number text not null unique default ('CK-' || nextval('public.order_number_seq')),
+  order_number text not null unique default ('MR-' || nextval('public.order_number_seq')),
   user_id uuid not null references auth.users(id),
   kind order_kind not null default 'ORDER',
   status order_status not null default 'PAYMENT_PENDING',

@@ -14,7 +14,7 @@ const PAGES: Record<string, { title: string; body: (s: { name: string; phone: st
     "These terms are governed by the laws of India, with courts in Bengaluru, Karnataka having jurisdiction." ] },
   privacy: { title: "Privacy policy", body: (s) => [
     "We collect your phone number (to sign you in), your name, delivery addresses and location (to check delivery and estimate arrival), and your order history.",
-    "Payments are processed by our payment provider. We never see or store your card, UPI PIN or bank credentials.",
+    "Payments are processed by our payment provider. We never see or store your card details, payment PIN or bank credentials.",
     "We share your address and phone number only with the person delivering your order.",
     "We do not sell your data. You can ask us to delete your account and data at any time.",
     `Contact: ${s.email} · ${s.phone}` ] },

@@ -87,7 +87,7 @@ export function PlanBuilder({ plans, initialSlug, addresses, signedIn, kitchen, 
         </dl>
         {err && <div className="mt-4"><Banner tone="danger" title={err} /></div>}
         <Button size="lg" className="mt-5 w-full" disabled={busy || !signedIn || !addressId || !price} onClick={pay}>{busy ? "Starting…" : "Continue to pay"}</Button>
-        <p className="mt-3 text-xs text-muted">Paid once by UPI. Final amount is checked by our server. Skipped meals are credited to your plan.</p>
+        <p className="mt-3 text-xs text-muted">Paid once, securely. Final amount is checked by our server. Skipped meals are credited to your plan.</p>
       </aside>
     </div>
   );

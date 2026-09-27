@@ -2,6 +2,8 @@ const CLOUD = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME || "zu6iogvj";
 
 /** Optimised Cloudinary URL: automatic format + quality, width-capped, smart crop. */
 export function cld(publicId: string, opts: { w?: number; h?: number; crop?: "fill" | "limit"; video?: boolean } = {}) {
+  if (publicId.startsWith("https://images.unsplash.com/")) return `${publicId.split("?")[0]}?auto=format&fit=crop&w=${opts.w ?? 1200}${opts.h ? `&h=${opts.h}` : ""}&q=70`;
+  if (publicId.startsWith("https://")) return publicId;
   const t = ["f_auto", "q_auto"];
   if (opts.w) t.push(`w_${opts.w}`);
   if (opts.h) t.push(`h_${opts.h}`);

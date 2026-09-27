@@ -20,7 +20,7 @@ export function OrderScene({ status }: { status: OrderStatus }) {
   const dim = ["PAYMENT_FAILED", "CANCELLED", "REFUNDED"].includes(status);
   return (
     <div className={`relative h-[240px] overflow-hidden rounded-[32px] bg-raised md:h-[320px] ${dim ? "opacity-50 grayscale" : ""}`} aria-hidden="true">
-      {tier === "full" && !dim ? <CookerCanvas pose={pose} className="absolute inset-0" /> : (
+      {tier === "full" && !dim ? <CookerCanvas pose={pose} framing="tight" className="absolute inset-0" /> : (
         <Image src="/images/cooker-exploded.webp" alt="" fill sizes="600px" className="object-contain p-4" />
       )}
       {pose.steam && !dim && (

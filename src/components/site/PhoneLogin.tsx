@@ -11,11 +11,23 @@ function normalise(raw: string) {
 }
 
 /** Phone OTP via Supabase Auth. Codes are generated, hashed, rate-limited and expired by Supabase, never stored by us. */
-export function PhoneLogin({ next }: { next: string }) {
+function explain(err: { message?: string; status?: number; code?: string }) {
+  const m = (err.message ?? "").toLowerCase();
+  if (err.status === 429 || m.includes("rate")) return { title: "Too many codes requested.", detail: "Wait a minute and try again." };
+  if (m.includes("unsupported phone provider") || m.includes("phone provider") || m.includes("sms provider"))
+    return { title: "Phone sign-in isn’t switched on yet.", detail: "The site owner needs to enable Phone sign-in and an SMS provider in Supabase (Authentication → Sign In / Providers → Phone)." };
+  if (m.includes("signups not allowed") || m.includes("signup")) return { title: "New sign-ups are turned off.", detail: "The site owner needs to allow new users in Supabase (Authentication → Sign In / Providers)." };
+  if (m.includes("invalid") && m.includes("phone")) return { title: "That number doesn’t look right.", detail: "Enter a 10-digit Indian mobile number." };
+  if (m.includes("fetch") || m.includes("network")) return { title: "We couldn’t reach the sign-in service.", detail: "Check your connection. If it keeps happening, the site’s Supabase keys may not be set." };
+  return { title: "We couldn’t send a code to that number.", detail: err.message ? `Reason: ${err.message}` : "Try again in a moment." };
+}
+
+export function PhoneLogin({ next, heading, subheading }: { next: string; heading?: string; subheading?: string }) {
   const [step, setStep] = useState<"phone" | "code">("phone");
   const [phone, setPhone] = useState("");
   const [code, setCode] = useState("");
   const [err, setErr] = useState<string | null>(null);
+  const [detail, setDetail] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [wait, setWait] = useState(0);
   const codeRef = useRef<HTMLInputElement>(null);
@@ -24,15 +36,15 @@ export function PhoneLogin({ next }: { next: string }) {
   async function send() {
     const e164 = normalise(phone);
     if (!e164) return setErr("Enter a 10-digit Indian mobile number.");
-    setBusy(true); setErr(null);
+    setBusy(true); setErr(null); setDetail(null);
     const { error } = await getBrowserClient().auth.signInWithOtp({ phone: e164 });
     setBusy(false);
-    if (error) return setErr(error.status === 429 ? "Too many codes requested. Wait a minute and try again." : "We couldn’t send a code to that number. Check it and try again.");
+    if (error) { const x = explain(error); setDetail(x.detail); return setErr(x.title); }
     setStep("code"); setWait(30); setTimeout(() => codeRef.current?.focus(), 50);
   }
   async function verify() {
     if (!/^\d{6}$/.test(code)) return setErr("Enter the 6-digit code.");
-    setBusy(true); setErr(null);
+    setBusy(true); setErr(null); setDetail(null);
     const { error } = await getBrowserClient().auth.verifyOtp({ phone: normalise(phone)!, token: code, type: "sms" });
     setBusy(false);
     if (error) return setErr("That code didn’t work. Check it or request a new one.");
@@ -41,10 +53,10 @@ export function PhoneLogin({ next }: { next: string }) {
   return (
     <div className="flex flex-col gap-6">
       <div>
-        <h1 className="font-display text-[34px] leading-tight">{step === "phone" ? "Sign in with your phone" : "Enter the 6-digit code"}</h1>
-        <p className="mt-2 text-muted">{step === "phone" ? "We’ll text you a one-time code. No password needed." : `Sent to ${normalise(phone)}.`}</p>
+        <h1 className="font-display text-[34px] leading-tight">{step === "phone" ? heading ?? "Sign in with your phone" : "Enter the 6-digit code"}</h1>
+        <p className="mt-2 text-muted">{step === "phone" ? subheading ?? "We’ll text you a one-time code. No password needed." : `Sent to ${normalise(phone)}.`}</p>
       </div>
-      {err && <Banner tone="danger" title={err} />}
+      {err && <Banner tone="danger" title={err}>{detail}</Banner>}
       {step === "phone" ? (
         <form className="flex flex-col gap-4" onSubmit={(e) => { e.preventDefault(); send(); }}>
           <Field id="phone" label="Mobile number" inputMode="tel" autoComplete="tel-national" placeholder="98765 43210" value={phone} onChange={(e) => setPhone(e.target.value)} />

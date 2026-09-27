@@ -1,4 +1,4 @@
-# Cloud Kitchen
+# MOOROOTA · Your Everyday Meal
 
 A production ordering platform for a Bengaluru cloud kitchen: menu, cart, phone OTP sign-in, delivery-zone checks, server-side pricing, UPI payments with verification, live order tracking, monthly meal plans, and an admin/CMS portal where every dish, plan and homepage section is editable. The homepage centres on a real 3D rice cooker that separates into layers as you scroll.
 
@@ -23,18 +23,27 @@ git push -u origin main
 
 ### 2. Set up the database (Supabase)
 
-In your Supabase project (`sxofpopumsobvwbazpzk`):
+In your Supabase project (`sxofpopumsobvwbazpzk`), open **SQL Editor → New query**, paste each file and click Run, **in this order**:
 
-1. **SQL Editor → New query**: paste all of `supabase/migrations/0001_init.sql` and run it. Then do the same with `supabase/seed.sql` (starter dishes, plans and homepage text; all editable later).
-2. **Authentication → Sign In / Providers → Phone**: turn it on and connect an SMS provider (Twilio, MessageBird, Vonage or Textlocal are built in). Sending SMS to Indian numbers requires DLT registration (a TRAI rule) with your SMS provider; start this early, it can take a few days. Until then, you can add **test phone numbers with fixed OTPs** on the same screen to try the full flow.
-3. **Authentication → Rate limits**: keep the OTP limits on. Consider enabling CAPTCHA under Attack Protection once live.
-4. **Authentication → URL Configuration**: set **Site URL** to your live address (for example `https://your-domain.com`).
-5. **Make yourself admin**: Authentication → Users → **Add user** → email + password, tick "Auto confirm". Then in the SQL Editor run:
-   ```sql
-   update public.profiles set role = 'ADMIN' where email = 'you@example.com';
-   ```
-   Sign in at `/admin/login`. Kitchen and delivery staff are added later from **Admin → Customers & staff**.
-6. **Project Settings → API**: you'll copy the **anon** key and the **service_role** key into Vercel in the next step. The service_role key bypasses all security rules: never share it or put it in code.
+1. `supabase/migrations/0001_init.sql`: tables, security rules, order state machine
+2. `supabase/migrations/0002_security_hardening.sql`: locks roles, prices and payments so they can only be changed by the server
+3. `supabase/seed.sql`: starter categories, plans and dishes
+4. `supabase/seed-v2.sql`: 21 more trial dishes with photos, the full homepage and "Our kitchen" text, a sample week for every meal plan, and the MOOROOTA name
+
+**Already ran 0001 and seed.sql earlier?** Just run `0002_security_hardening.sql` and then `seed-v2.sql`. Both are safe to run more than once. Note that `seed-v2.sql` replaces the homepage text with the new copy.
+
+**Turn on phone sign-in** (customers and staff both sign in with a phone OTP):
+
+1. **Authentication → Sign In / Providers → Phone**: enable it and choose an SMS provider. Twilio is the most common choice; paste its Account SID, Auth Token and Messaging Service SID (or use Twilio Verify). Indian numbers need DLT registration for SMS, which your SMS provider guides you through. Start early, as it can take a few days.
+2. **To test before SMS works:** on the same Phone screen, add **Test phone numbers and OTPs**, for example `918660828930=123456`. That number then signs in with code `123456` and no SMS is sent.
+3. Keep the OTP rate limits on (Authentication → Rate limits).
+4. **Authentication → URL Configuration**: set **Site URL** to your live address.
+
+If sending a code fails, the sign-in page now shows the exact reason Supabase gave. "Phone sign-in isn't switched on yet" means step 1 isn't done.
+
+**Admin access (no password):** add `ADMIN_PHONES` in Vercel with your 10-digit mobile number (several numbers can be separated by commas). Sign in at `/admin/login` with that number and it becomes an admin automatically. Add kitchen and delivery staff later in **Admin → Customers & staff**.
+
+**Photos:** dishes and page images from `seed-v2.sql` are free Unsplash stock photos, good for a trial. Before launch, upload photos of your own food in Admin → Products and Admin → Site content. Customers should see what they will actually receive.
 
 ### 3. Deploy on Vercel
 
@@ -53,6 +62,7 @@ Import the GitHub repo in Vercel (it detects Next.js automatically). Before the 
 | `UPI_PAYEE_NAME` | The name shown in the customer's UPI app | No |
 | `MAPS_PROVIDER` / `MAPS_API_KEY` | See step 5 (optional) | **Yes** (key) |
 | `CRON_SECRET` | Any long random string you invent | **Yes** |
+| `ADMIN_PHONES` | Your mobile number(s), e.g. `9742022976` | No |
 
 Only the variables starting with `NEXT_PUBLIC_` are visible to browsers; everything else stays on the server. After adding or changing variables, redeploy (Deployments → ⋯ → Redeploy).
 

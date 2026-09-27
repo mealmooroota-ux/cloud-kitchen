@@ -5,18 +5,19 @@ import { ContactShadows, Environment, Lightformer, useGLTF } from "@react-three/
 import * as THREE from "three";
 
 const MODEL = "/models/rice-cooker.glb";
-// Separation distance per part (model units), matching the exploded poster.
+// Separation per part (model units), compressed so the fully opened stack stays inside one fixed frame.
+const SPREAD = 0.72;
 const OFFSET: Record<string, number> = { base: 0, plate: 1.38, pot: 1.74, rice: 2.77, lid: 2.74, vent: 3.24 };
 const ORDER = ["base", "plate", "pot", "rice", "lid", "vent"];
 
 export interface CookerPose { explode: number; spin?: number; steam?: boolean; jiggle?: boolean }
 
-function Cooker({ progress, pose }: { progress?: MutableRefObject<number>; pose?: CookerPose }) {
+function Cooker({ progress, active, pose, framing }: { progress?: MutableRefObject<number>; active?: MutableRefObject<string | null>; pose?: CookerPose; framing: "story" | "tight" }) {
   const { scene } = useGLTF(MODEL);
   const root = useRef<THREE.Group>(null);
   const parts = useMemo(() => {
     const map: Record<string, { obj: THREE.Object3D; baseY: number }> = {};
-    // GLTFLoader sanitises names ("plate.001" -> "plate001"), so match by prefix and take the top-most node per part.
+    // GLTFLoader sanitises names ("plate.001" -> "plate001"): match by prefix, take the top-most node per part.
     const re = /^(base|plate|pot|rice|lid|vent)/;
     const claimed = new Set<THREE.Object3D>();
     scene.traverse((o) => {
@@ -30,7 +31,6 @@ function Cooker({ progress, pose }: { progress?: MutableRefObject<number>; pose?
       const mesh = o as THREE.Mesh;
       if (!mesh.isMesh) return;
       mesh.castShadow = true; mesh.receiveShadow = true;
-      // Keep steel readable even where environment reflections are weak (low-end GPUs, software rendering).
       const mat = mesh.material as THREE.MeshStandardMaterial;
       if (mat && "metalness" in mat && mat.metalness > 0.7) { mat.metalness = 0.7; mat.roughness = Math.max(mat.roughness, 0.28); mat.envMapIntensity = 1.2; }
     });
@@ -38,35 +38,40 @@ function Cooker({ progress, pose }: { progress?: MutableRefObject<number>; pose?
   }, [scene]);
   const { camera } = useThree();
   const current = useRef(0);
+  const look = useRef(new THREE.Vector3(0, 1, 0));
 
   useFrame((state, dt) => {
     const target = progress ? progress.current : pose?.explode ?? 0;
-    current.current = THREE.MathUtils.damp(current.current, target, 6, dt);
+    current.current = THREE.MathUtils.damp(current.current, target, 5, dt);
     const p = current.current;
     ORDER.forEach((k, i) => {
       const part = parts[k];
       if (!part) return;
-      // stagger: upper parts start separating first, all settle together
-      const local = THREE.MathUtils.clamp((p - (5 - i) * 0.04) / (1 - 0.2), 0, 1);
+      const local = THREE.MathUtils.clamp((p - (5 - i) * 0.04) / 0.8, 0, 1);
       const eased = local < 0.5 ? 4 * local ** 3 : 1 - (-2 * local + 2) ** 3 / 2;
-      let y = part.baseY + OFFSET[k] * eased;
+      let y = part.baseY + OFFSET[k] * SPREAD * eased;
       if (pose?.jiggle && (k === "lid" || k === "vent")) y += Math.abs(Math.sin(state.clock.elapsedTime * 7)) * 0.025;
       part.obj.position.y = y;
+      // present the part being described: a gentle scale-up
+      const on = active?.current === k && p > 0.5;
+      const sc = THREE.MathUtils.damp(part.obj.scale.x, on ? 1.08 : 1, 6, dt);
+      part.obj.scale.setScalar(sc);
     });
     if (root.current) {
-      const spin = pose?.spin ?? 0;
-      root.current.rotation.y = progress ? -0.5 + p * 0.9 + Math.sin(state.clock.elapsedTime * 0.3) * 0.03 : root.current.rotation.y + dt * spin;
+      // turntable: always turning in front of the viewer
+      root.current.rotation.y += dt * (pose?.spin ?? 0.32);
     }
-    // frame the object: tighter when closed, wider when separated
-    const h = 1.8 + 3.2 * p;
-    const dist = 6.4 + 11 * p;
-    camera.position.lerp(new THREE.Vector3(0, h * 0.62 + 0.9, dist), 0.12);
-    camera.lookAt(0, h * 0.5, 0);
+    // Fixed camera distance: the cooker is never pushed back. Only the aim follows the stack's centre.
+    const top = 1.9 + 3.24 * SPREAD * p;
+    const dist = framing === "story" ? 10.6 : 6.6;
+    look.current.lerp(new THREE.Vector3(0, framing === "story" ? 2.15 : top * 0.5, 0), 0.08);
+    camera.position.set(0, look.current.y + (framing === "story" ? 1.2 : 1.1), dist);
+    camera.lookAt(look.current);
   });
-  return <group ref={root}><primitive object={scene} /></group>;
+  return <group ref={root} rotation-y={-0.4}><primitive object={scene} /></group>;
 }
 
-export default function CookerCanvas({ progress, pose, className = "" }: { progress?: MutableRefObject<number>; pose?: CookerPose; className?: string }) {
+export default function CookerCanvas({ progress, active, pose, className = "", framing = "tight" }: { progress?: MutableRefObject<number>; active?: MutableRefObject<string | null>; pose?: CookerPose; className?: string; framing?: "story" | "tight" }) {
   const wrap = useRef<HTMLDivElement>(null);
   const [visible, setVisible] = useState(true);
   useEffect(() => {
@@ -77,13 +82,13 @@ export default function CookerCanvas({ progress, pose, className = "" }: { progr
   }, []);
   return (
     <div ref={wrap} className={className} aria-hidden="true">
-      <Canvas shadows dpr={[1, 1.75]} frameloop={visible ? "always" : "never"} camera={{ fov: 30, position: [0, 2, 7] }} gl={{ antialias: true, powerPreference: "high-performance", alpha: true }}>
+      <Canvas shadows dpr={[1, 1.75]} frameloop={visible ? "always" : "never"} camera={{ fov: 30, position: [0, 3, 10] }} gl={{ antialias: true, powerPreference: "high-performance", alpha: true }}>
         <ambientLight intensity={0.35} />
         <hemisphereLight args={["#fffaf2", "#d9cbb6", 0.9]} />
         <directionalLight position={[-4, 7, 5]} intensity={1.6} color="#fff1e0" castShadow shadow-mapSize={[1024, 1024]} />
         <directionalLight position={[5, 4, -4]} intensity={0.6} color="#eef3ff" />
         <Suspense fallback={null}>
-          <Cooker progress={progress} pose={pose} />
+          <Cooker progress={progress} active={active} pose={pose} framing={framing} />
           <Environment resolution={256} frames={1}>
             <Lightformer form="rect" intensity={3} position={[-4, 5, 3]} scale={[6, 6, 1]} color="#fff4e6" />
             <Lightformer form="rect" intensity={1.5} position={[5, 3, -3]} scale={[4, 4, 1]} color="#f2f5ff" />
