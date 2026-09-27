@@ -3,13 +3,14 @@ import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { setPaused, skipMeal, unskipMeal } from "@/app/account/actions";
 import { Banner, Button } from "@/components/ui";
+import { callAction } from "@/lib/call-action";
 
 const L: Record<string, string> = { BREAKFAST: "Breakfast", LUNCH: "Lunch", DINNER: "Dinner", SNACK: "Snack" };
 export function PlanDays({ subscriptionId, status, allowPause, days, slots }: { subscriptionId: string; status: string; allowPause: boolean; slots: Record<string, string>; days: { date: string; meals: { meal: string; dish: string; skipped: boolean }[] }[] }) {
   const router = useRouter();
   const [pending, start] = useTransition();
   const [err, setErr] = useState<string | null>(null);
-  const run = (f: () => Promise<{ ok: boolean; error?: string }>) => start(async () => { const r = await f(); if (!r.ok) setErr(r.error ?? "Something went wrong."); else { setErr(null); router.refresh(); } });
+  const run = (f: () => Promise<{ ok: boolean; error?: string }>) => start(async () => { const r = await callAction(f); if (!r.ok) setErr(r.error ?? "Something went wrong."); else { setErr(null); router.refresh(); } });
   return (
     <div className="flex flex-col gap-5">
       {err && <Banner tone="danger" title={err} />}

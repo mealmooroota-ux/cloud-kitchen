@@ -3,6 +3,7 @@ import { useState, useTransition } from "react";
 import { saveAddress } from "@/app/account/actions";
 import { Banner, Button, Field } from "@/components/ui";
 import { haversineKm } from "@/lib/geo";
+import { callAction } from "@/lib/call-action";
 
 export function AddressForm({ kitchen, radiusKm, onSaved, initial }: {
   kitchen: { lat: number; lng: number }; radiusKm: number; onSaved?: (id: string) => void;
@@ -29,11 +30,11 @@ export function AddressForm({ kitchen, radiusKm, onSaved, initial }: {
       if (!coords) return setErr("Set the location first so we can check delivery.");
       const f = new FormData(e.currentTarget);
       start(async () => {
-        const r = await saveAddress({
+        const r = await callAction(() => saveAddress({
           id: initial?.id ?? "", label: String(f.get("label")), line1: String(f.get("line1")), line2: String(f.get("line2") ?? ""), landmark: String(f.get("landmark") ?? ""),
           city: String(f.get("city")), postal_code: String(f.get("postal_code")), latitude: coords.lat, longitude: coords.lng, is_default: f.get("is_default") === "on",
-        });
-        if (!r.ok) setErr(r.error); else onSaved?.(r.id!);
+        }));
+        if (!r.ok) setErr(r.error ?? "Couldn’t save the address."); else onSaved?.("id" in r ? r.id! : "");
       });
     }}>
       {err && <Banner tone="danger" title={err} />}

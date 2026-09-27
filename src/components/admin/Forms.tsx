@@ -2,11 +2,12 @@
 import { useState, useTransition } from "react";
 import { assignRider, confirmManualPayment, markPaymentFailed } from "@/app/admin/actions";
 import { Button } from "@/components/ui";
+import { callAction } from "@/lib/call-action";
 
 export function useAction() {
   const [pending, start] = useTransition();
   const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null);
-  const run = (f: () => Promise<{ ok: boolean; error?: string }>, okText = "Saved") => start(async () => { const r = await f(); setMsg(r.ok ? { ok: true, text: okText } : { ok: false, text: r.error ?? "Something went wrong." }); });
+  const run = (f: () => Promise<{ ok: boolean; error?: string }>, okText = "Saved") => start(async () => { const r = await callAction(f); setMsg(r.ok ? { ok: true, text: okText } : { ok: false, text: r.error ?? "Something went wrong." }); });
   const note = msg && <p role="status" className={`text-sm ${msg.ok ? "text-success" : "text-danger"}`}>{msg.text}</p>;
   return { pending, run, note };
 }

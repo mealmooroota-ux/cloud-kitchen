@@ -5,13 +5,13 @@ revoke update on public.profiles from anon, authenticated;
 grant update (full_name) on public.profiles to authenticated;
 revoke insert, delete on public.profiles from anon, authenticated;
 
-create or replace function public.guard_profile_role() returns trigger language plpgsql security definer set search_path = public as $$
+create or replace function public.guard_profile_role() returns trigger
+language plpgsql security invoker set search_path = public as $$
 begin
-  if new.role is distinct from old.role and coalesce(auth.role(), '') <> 'service_role' then
-    raise exception 'ROLE_CHANGE_FORBIDDEN';
-  end if;
-  if new.phone is distinct from old.phone and coalesce(auth.role(), '') <> 'service_role' then
-    raise exception 'PHONE_CHANGE_FORBIDDEN';
+  -- Only website visitors (anon/authenticated) are blocked. The server (service_role) and you in the SQL editor are allowed.
+  if current_user in ('anon', 'authenticated') then
+    if new.role is distinct from old.role then raise exception 'ROLE_CHANGE_FORBIDDEN'; end if;
+    if new.phone is distinct from old.phone then raise exception 'PHONE_CHANGE_FORBIDDEN'; end if;
   end if;
   return new;
 end $$;

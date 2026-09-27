@@ -6,8 +6,8 @@ import { Banner, Button, Field } from "@/components/ui";
 type Mode = "signin" | "signup" | "forgot";
 
 /** Never leave the button spinning: give up after 20 s with a clear message. */
-function withTimeout<T>(p: Promise<T>, ms = 20000): Promise<T> {
-  return Promise.race([p, new Promise<T>((_, rej) => setTimeout(() => rej(new Error("timeout")), ms))]);
+function withTimeout<T>(p: PromiseLike<T>, ms = 20000): Promise<T> {
+  return Promise.race<T>([Promise.resolve(p), new Promise<never>((_, rej) => setTimeout(() => rej(new Error("timeout")), ms))]);
 }
 
 function explain(message = "", status?: number) {

@@ -5,11 +5,12 @@ import Image from "next/image";
 import type { Media } from "@/lib/types";
 import { addMedia, makeCover, removeMedia } from "@/app/admin/actions";
 import { CloudinaryUpload } from "./CloudinaryUpload";
+import { callAction } from "@/lib/call-action";
 
 export function MediaManager({ productId, media }: { productId: string; media: Media[] }) {
   const router = useRouter();
   const [pending, start] = useTransition();
-  const act = (f: () => Promise<unknown>) => start(async () => { await f(); router.refresh(); });
+  const act = (f: () => Promise<{ ok: boolean; error?: string }>) => start(async () => { const r = await callAction(f); if (!r.ok) alert(r.error); router.refresh(); });
   return (
     <section className="flex flex-col gap-4 rounded-[12px] border border-line bg-surface p-5">
       <div className="flex items-center justify-between"><h2 className="font-semibold">Photos and video</h2>

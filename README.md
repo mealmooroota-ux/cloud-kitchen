@@ -28,6 +28,7 @@ In your Supabase project (`sxofpopumsobvwbazpzk`), open **SQL Editor → New que
 1. `supabase/migrations/0001_init.sql`: tables, security rules, order state machine
 2. `supabase/migrations/0002_security_hardening.sql`: locks roles, prices and payments so they can only be changed by the server
 3. `supabase/migrations/0003_email_auth_contact_phone.sql`: delivery phone on orders, names from Google/email sign-up
+   Then `supabase/migrations/0004_fix_role_guard.sql`: lets you change roles from the SQL editor (customers stay blocked)
 4. `supabase/seed.sql`: starter categories, plans and dishes
 5. `supabase/seed-v2.sql`: 21 more trial dishes with photos, the full homepage and "Our kitchen" text, a sample week for every meal plan, and the MOOROOTA name
 

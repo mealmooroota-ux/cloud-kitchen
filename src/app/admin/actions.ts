@@ -9,6 +9,10 @@ import { getSettings } from "@/lib/settings";
 import { slugify } from "@/lib/format";
 import { log } from "@/lib/log";
 import type { OrderStatus } from "@/lib/types";
+import { env } from "@/lib/env";
+
+/** Returned instead of crashing when the server key is missing in Vercel. */
+const NO_KEY = { ok: false as const, error: "The server key isn’t set. Add SUPABASE_SERVICE_ROLE_KEY in Vercel → Settings → Environment Variables, then redeploy." };
 
 type R = { ok: true } | { ok: false; error: string };
 const paise = (v: FormDataEntryValue | null) => Math.round(Number(String(v ?? "0").replace(/[^\d.]/g, "")) * 100);
@@ -19,6 +23,7 @@ const text = (v: FormDataEntryValue | null) => String(v ?? "").trim();
 // ---------- orders ----------
 export async function transitionOrder(orderId: string, to: OrderStatus, note?: string): Promise<R> {
   const { supabase, user, role } = await requireStaff();
+  if (!env.supabaseServiceKey) return NO_KEY;
   // Runs with the staff member's JWT: the SQL function enforces allowed transitions and role rules.
   const { error } = await supabase.rpc("transition_order", { p_order_id: orderId, p_to: to, p_source: "staff", p_note: note ?? null });
   if (error) return { ok: false, error: error.message.includes("INVALID_TRANSITION") ? "That step isn’t allowed from the current status." : error.message.includes("FORBIDDEN") ? "Your role can’t do that." : "Couldn’t update the order." };
@@ -33,6 +38,7 @@ export async function transitionOrder(orderId: string, to: OrderStatus, note?: s
 }
 export async function assignRider(orderId: string, formData: FormData): Promise<R> {
   await requireStaff(["ADMIN", "KITCHEN"]);
+  if (!env.supabaseServiceKey) return NO_KEY;
   await createAdminClient().from("delivery").upsert({ order_id: orderId, rider_name: text(formData.get("rider_name")), rider_phone: text(formData.get("rider_phone")), assigned_at: new Date().toISOString() });
   revalidatePath(`/admin/orders/${orderId}`); revalidatePath("/admin/delivery");
   return { ok: true };
@@ -42,6 +48,7 @@ export async function assignRider(orderId: string, formData: FormData): Promise<
 /** Manual UPI only: an ADMIN confirms the credit is in the bank/PhonePe Business app. UTR is mandatory and logged. */
 export async function confirmManualPayment(paymentId: string, formData: FormData): Promise<R> {
   const { user } = await requireStaff(["ADMIN"]);
+  if (!env.supabaseServiceKey) return NO_KEY;
   const utr = text(formData.get("utr")).toUpperCase();
   const amount = paise(formData.get("amount"));
   if (!/^[A-Z0-9]{8,22}$/.test(utr)) return { ok: false, error: "Enter the UPI transaction ID / UTR from your bank app." };
@@ -58,6 +65,7 @@ export async function confirmManualPayment(paymentId: string, formData: FormData
 }
 export async function markPaymentFailed(paymentId: string): Promise<R> {
   const { user } = await requireStaff(["ADMIN"]);
+  if (!env.supabaseServiceKey) return NO_KEY;
   const db = createAdminClient();
   await db.from("payment_events").insert({ payment_id: paymentId, provider: "manual_upi", event_type: "staff_marked_failed", signature_valid: true, processed: true, payload: { by: user.id } });
   await applyPaymentResult(db, paymentId, { status: "FAILED" }, await getSettings(), { source: "staff" });
@@ -68,6 +76,7 @@ export async function markPaymentFailed(paymentId: string): Promise<R> {
 // ---------- menu ----------
 export async function setAvailability(productId: string, available: boolean): Promise<R> {
   await requireStaff(["ADMIN", "KITCHEN"]);
+  if (!env.supabaseServiceKey) return NO_KEY;
   await createAdminClient().from("products").update({ is_available: available }).eq("id", productId);
   revalidatePath("/admin/products"); revalidatePath("/menu"); revalidatePath("/");
   return { ok: true };
@@ -76,6 +85,7 @@ const Addons = z.array(z.object({ id: z.string().optional(), name: z.string().mi
   addons: z.array(z.object({ id: z.string().optional(), name: z.string().min(1), price_paise: z.number().int().min(0), is_available: z.boolean() })) }));
 export async function saveProduct(id: string | null, formData: FormData): Promise<R & { id?: string }> {
   await requireStaff(["ADMIN"]);
+  if (!env.supabaseServiceKey) return NO_KEY;
   const db = createAdminClient();
   const name = text(formData.get("name"));
   if (!name) return { ok: false, error: "Give the dish a name." };
@@ -101,6 +111,7 @@ export async function saveProduct(id: string | null, formData: FormData): Promis
 }
 export async function addMedia(productId: string, publicId: string, kind: "image" | "video", alt: string): Promise<R> {
   await requireStaff(["ADMIN"]);
+  if (!env.supabaseServiceKey) return NO_KEY;
   const db = createAdminClient();
   const { count } = await db.from("product_media").select("id", { count: "exact", head: true }).eq("product_id", productId);
   await db.from("product_media").insert({ product_id: productId, public_id: publicId, kind, alt, position: count ?? 0 });
@@ -109,12 +120,14 @@ export async function addMedia(productId: string, publicId: string, kind: "image
 }
 export async function removeMedia(mediaId: string, productId: string): Promise<R> {
   await requireStaff(["ADMIN"]);
+  if (!env.supabaseServiceKey) return NO_KEY;
   await createAdminClient().from("product_media").delete().eq("id", mediaId);
   revalidatePath(`/admin/products/${productId}`);
   return { ok: true };
 }
 export async function makeCover(mediaId: string, productId: string): Promise<R> {
   await requireStaff(["ADMIN"]);
+  if (!env.supabaseServiceKey) return NO_KEY;
   const db = createAdminClient();
   await db.from("product_media").update({ position: 1000 }).eq("product_id", productId).neq("id", mediaId);
   await db.from("product_media").update({ position: 0 }).eq("id", mediaId);
@@ -123,6 +136,7 @@ export async function makeCover(mediaId: string, productId: string): Promise<R> 
 }
 export async function saveCategory(formData: FormData): Promise<R> {
   await requireStaff(["ADMIN"]);
+  if (!env.supabaseServiceKey) return NO_KEY;
   const id = text(formData.get("id"));
   const name = text(formData.get("name"));
   if (!name) return { ok: false, error: "Name the category." };
@@ -135,6 +149,7 @@ export async function saveCategory(formData: FormData): Promise<R> {
 }
 export async function deleteCategory(id: string): Promise<R> {
   await requireStaff(["ADMIN"]);
+  if (!env.supabaseServiceKey) return NO_KEY;
   await createAdminClient().from("categories").delete().eq("id", id);
   revalidatePath("/admin/categories");
   return { ok: true };
@@ -143,6 +158,7 @@ export async function deleteCategory(id: string): Promise<R> {
 // ---------- meal plans ----------
 export async function savePlan(id: string | null, formData: FormData): Promise<R & { id?: string }> {
   await requireStaff(["ADMIN"]);
+  if (!env.supabaseServiceKey) return NO_KEY;
   const name = text(formData.get("name"));
   if (!name) return { ok: false, error: "Name the plan." };
   const meals = ["BREAKFAST", "LUNCH", "DINNER", "SNACK"].filter((m) => bool(formData.get(`meal_${m}`)));
@@ -169,6 +185,7 @@ export async function savePlan(id: string | null, formData: FormData): Promise<R
 }
 export async function savePlanMenu(planId: string, week: number, formData: FormData): Promise<R> {
   await requireStaff(["ADMIN"]);
+  if (!env.supabaseServiceKey) return NO_KEY;
   const db = createAdminClient();
   const rows: { plan_id: string; week: number; weekday: number; meal: string; product_id: string | null; custom_name: string | null }[] = [];
   for (const [k, v] of formData.entries()) {
@@ -187,6 +204,7 @@ export async function savePlanMenu(planId: string, week: number, formData: FormD
 // ---------- site content ----------
 export async function saveSection(key: string, content: Record<string, unknown>, enabled: boolean, position: number): Promise<R> {
   const { user } = await requireStaff(["ADMIN"]);
+  if (!env.supabaseServiceKey) return NO_KEY;
   const { error } = await createAdminClient().from("site_sections").upsert({ key, content, is_enabled: enabled, position, updated_at: new Date().toISOString(), updated_by: user.id });
   if (error) return { ok: false, error: "Couldn’t save the section." };
   revalidatePath("/"); revalidatePath("/admin/content");
@@ -194,6 +212,7 @@ export async function saveSection(key: string, content: Record<string, unknown>,
 }
 export async function saveLayers(formData: FormData): Promise<R> {
   await requireStaff(["ADMIN"]);
+  if (!env.supabaseServiceKey) return NO_KEY;
   const db = createAdminClient();
   for (const key of ["vent", "lid", "rice", "pot", "plate", "base"]) {
     await db.from("cooker_layers").upsert({ key, position: ["vent", "lid", "rice", "pot", "plate", "base"].indexOf(key) + 1, name: text(formData.get(`${key}_name`)), title: text(formData.get(`${key}_title`)), body: text(formData.get(`${key}_body`)) });
@@ -203,6 +222,7 @@ export async function saveLayers(formData: FormData): Promise<R> {
 }
 export async function saveSettings(formData: FormData): Promise<R> {
   await requireStaff(["ADMIN"]);
+  if (!env.supabaseServiceKey) return NO_KEY;
   const row = {
     kitchen_name: text(formData.get("kitchen_name")), kitchen_address: text(formData.get("kitchen_address")) || null,
     kitchen_lat: Number(formData.get("kitchen_lat")), kitchen_lng: Number(formData.get("kitchen_lng")), delivery_radius_km: Number(formData.get("delivery_radius_km")),
@@ -220,12 +240,14 @@ export async function saveSettings(formData: FormData): Promise<R> {
 }
 export async function setKitchenOpen(open: boolean): Promise<R> {
   await requireStaff(["ADMIN", "KITCHEN"]);
+  if (!env.supabaseServiceKey) return NO_KEY;
   await createAdminClient().from("settings").update({ is_open: open }).eq("id", 1);
   revalidatePath("/", "layout");
   return { ok: true };
 }
 export async function saveCoupon(formData: FormData): Promise<R> {
   await requireStaff(["ADMIN"]);
+  if (!env.supabaseServiceKey) return NO_KEY;
   const code = text(formData.get("code")).toUpperCase();
   if (!/^[A-Z0-9]{3,20}$/.test(code)) return { ok: false, error: "Use 3–20 letters or numbers." };
   const kind = text(formData.get("kind")) === "FLAT" ? "FLAT" : "PERCENT";
@@ -239,6 +261,7 @@ export async function saveCoupon(formData: FormData): Promise<R> {
 // ---------- people ----------
 export async function setRole(userId: string, role: "CUSTOMER" | "ADMIN" | "KITCHEN" | "DELIVERY"): Promise<R> {
   const { user } = await requireStaff(["ADMIN"]);
+  if (!env.supabaseServiceKey) return NO_KEY;
   if (userId === user.id && role !== "ADMIN") return { ok: false, error: "You can’t remove your own admin access." };
   await createAdminClient().from("profiles").update({ role }).eq("id", userId);
   log("info", "admin.role_changed", { userId, role, by: user.id });

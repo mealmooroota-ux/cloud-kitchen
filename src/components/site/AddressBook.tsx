@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import type { Address } from "@/lib/types";
 import { deleteAddress, makeDefaultAddress } from "@/app/account/actions";
 import { AddressForm } from "./AddressForm";
+import { callAction } from "@/lib/call-action";
 import { Pill } from "@/components/ui";
 
 export function AddressBook({ addresses, kitchen, radiusKm }: { addresses: Address[]; kitchen: { lat: number; lng: number }; radiusKm: number }) {
@@ -21,8 +22,8 @@ export function AddressBook({ addresses, kitchen, radiusKm }: { addresses: Addre
           <p className="text-sm text-muted">{[a.line1, a.line2, a.landmark, a.city, a.postal_code].filter(Boolean).join(", ")}</p>
           <div className="flex gap-4 text-sm font-semibold text-brand">
             <button type="button" onClick={() => setEditing(a.id)}>Edit</button>
-            {!a.is_default && <button type="button" onClick={() => start(async () => { await makeDefaultAddress(a.id); router.refresh(); })}>Make default</button>}
-            <button type="button" className="text-danger" onClick={() => { if (confirm(`Delete ${a.label}?`)) start(async () => { await deleteAddress(a.id); router.refresh(); }); }}>Delete</button>
+            {!a.is_default && <button type="button" onClick={() => start(async () => { await callAction(() => makeDefaultAddress(a.id)); router.refresh(); })}>Make default</button>}
+            <button type="button" className="text-danger" onClick={() => { if (confirm(`Delete ${a.label}?`)) start(async () => { await callAction(() => deleteAddress(a.id)); router.refresh(); }); }}>Delete</button>
           </div>
         </div>
       ))}
