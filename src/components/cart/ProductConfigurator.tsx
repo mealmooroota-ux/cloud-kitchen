@@ -40,7 +40,7 @@ export function ProductConfigurator({ product, groups }: { product: { id: string
           })}
         </fieldset>
       ))}
-      <div className="fixed inset-x-0 bottom-0 z-40 flex gap-3 border-t border-line bg-surface px-4 pb-[max(16px,env(safe-area-inset-bottom))] pt-3 md:static md:border-0 md:bg-transparent md:p-0">
+      <div className="mobile-bottom-bar fixed inset-x-0 bottom-0 z-40 flex gap-3 border-t border-line bg-surface px-4 pb-[max(16px,env(safe-area-inset-bottom))] pt-3 md:static md:border-0 md:bg-transparent md:p-0">
         <div className="flex h-14 items-center gap-1 rounded-full bg-brand-soft px-1.5">
           <button type="button" aria-label="Decrease quantity" onClick={() => setQty((q) => Math.max(1, q - 1))} className="grid size-11 place-items-center rounded-full text-xl text-brand">−</button>
           <span className="tabular w-6 text-center font-mono" aria-live="polite">{qty}</span>

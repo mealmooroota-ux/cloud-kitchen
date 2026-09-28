@@ -11,7 +11,7 @@ const V: Record<Variant, string> = {
   ghost: "text-ink hover:bg-raised",
   danger: "bg-danger text-white hover:opacity-90",
 };
-const S: Record<Size, string> = { sm: "h-9 px-4 text-sm", md: "h-11 px-6 text-sm", lg: "h-14 px-7 text-base" };
+const S: Record<Size, string> = { sm: "h-9 px-4 text-sm pointer-coarse:h-11", md: "h-11 px-6 text-sm", lg: "h-14 px-7 text-base" };
 export function btnClass(v: Variant = "primary", s: Size = "md", extra = "") {
   return `inline-flex items-center justify-center gap-2 rounded-[12px] font-semibold transition-colors duration-150 active:scale-[.98] disabled:opacity-40 disabled:pointer-events-none ${V[v]} ${S[s]} ${extra}`;
 }

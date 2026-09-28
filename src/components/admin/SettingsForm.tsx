@@ -20,7 +20,7 @@ export function SettingsForm({ s }: { s: Settings }) {
         <L label="Support email"><input name="support_email" defaultValue={s.support_email ?? ""} className={inp} /></L>
       </div>
       <h2 className="font-semibold">Delivery & pricing</h2>
-      <div className="grid gap-4 sm:grid-cols-2 md:grid-cols-4">
+      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <L label="Delivery radius (km)"><input name="delivery_radius_km" defaultValue={s.delivery_radius_km} className={inp} /></L>
         <L label="Delivery fee (₹)"><input name="delivery_fee" defaultValue={s.delivery_fee_paise / 100} className={inp} /></L>
         <L label="Free delivery above (₹)"><input name="free_delivery_above" defaultValue={s.free_delivery_above_paise != null ? s.free_delivery_above_paise / 100 : ""} className={inp} /></L>

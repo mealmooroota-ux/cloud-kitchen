@@ -95,9 +95,9 @@ export function AuthForm({ next, staff = false }: { next: string; staff?: boolea
         {mode !== "forgot" && <Field id="password" name="password" type="password" label="Password" autoComplete={mode === "signup" ? "new-password" : "current-password"} minLength={mode === "signup" ? 8 : undefined} hint={mode === "signup" ? "At least 8 characters." : undefined} required />}
         <Button type="submit" size="lg" disabled={busy}>{busy ? "Please wait…" : mode === "signup" ? "Create account" : mode === "forgot" ? "Send reset link" : "Sign in"}</Button>
       </form>
-      <div className="flex flex-wrap justify-between gap-3 text-sm">
-        {mode === "signin" && <><button type="button" className="font-semibold text-brand" onClick={() => { setMode("signup"); setErr(null); setInfo(null); }}>New here? Create an account</button><button type="button" className="text-muted hover:text-ink" onClick={() => { setMode("forgot"); setErr(null); setInfo(null); }}>Forgot password?</button></>}
-        {mode !== "signin" && <button type="button" className="font-semibold text-brand" onClick={() => { setMode("signin"); setErr(null); setInfo(null); }}>Back to sign in</button>}
+      <div className="flex flex-wrap justify-between gap-x-3 gap-y-1 text-sm">
+        {mode === "signin" && <><button type="button" className="font-semibold text-brand pointer-coarse:min-h-11" onClick={() => { setMode("signup"); setErr(null); setInfo(null); }}>New here? Create an account</button><button type="button" className="text-muted hover:text-ink pointer-coarse:min-h-11" onClick={() => { setMode("forgot"); setErr(null); setInfo(null); }}>Forgot password?</button></>}
+        {mode !== "signin" && <button type="button" className="font-semibold text-brand pointer-coarse:min-h-11" onClick={() => { setMode("signin"); setErr(null); setInfo(null); }}>Back to sign in</button>}
       </div>
     </div>
   );

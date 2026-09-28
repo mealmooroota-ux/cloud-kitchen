@@ -20,23 +20,23 @@ export default async function MenuPage({ searchParams }: { searchParams: Promise
     const next = new URLSearchParams(Object.entries({ ...sp, ...patch }).filter(([, v]) => v) as [string, string][]);
     const s = next.toString(); return s ? `/menu?${s}` : "/menu";
   };
-  const chip = (active: boolean) => `inline-flex h-9 shrink-0 items-center rounded-full border px-4 text-sm font-semibold ${active ? "border-brand bg-brand-soft text-brand" : "border-line bg-surface hover:bg-raised"}`;
+  const chip = (active: boolean) => `inline-flex h-9 pointer-coarse:h-11 shrink-0 items-center rounded-full border px-4 text-sm font-semibold ${active ? "border-brand bg-brand-soft text-brand" : "border-line bg-surface hover:bg-raised"}`;
   return (
     <Shell>
       <div className="mx-auto max-w-[1280px] px-4 pb-24 pt-8 md:px-8 md:pt-12">
-        <div className="flex flex-col gap-6 md:flex-row md:items-end md:justify-between">
+        <div className="flex flex-col gap-6 md:flex-row md:flex-wrap md:items-end md:justify-between">
           <div>
             <p className="text-sm text-muted">Updated live by the kitchen</p>
             <h1 className="font-display text-[40px] leading-none md:text-[56px]">Tonight’s menu</h1>
           </div>
-          <form action="/menu" className="flex gap-2" role="search">
+          <form action="/menu" className="flex min-w-0 gap-2" role="search">
             {sp.c && <input type="hidden" name="c" value={sp.c} />}
             <label htmlFor="q" className="sr-only">Search dishes</label>
-            <input id="q" name="q" defaultValue={sp.q} placeholder="Search dishes, e.g. khichdi" className="h-12 w-full rounded-[8px] border border-line-strong bg-raised px-3.5 md:w-80" />
+            <input id="q" name="q" defaultValue={sp.q} placeholder="Search dishes, e.g. khichdi" type="search" enterKeyHint="search" className="h-12 min-w-0 flex-1 rounded-[8px] border border-line-strong bg-raised px-3.5 md:w-80 md:flex-none" />
             <Link href={qs({ veg: sp.veg === "1" ? undefined : "1" })} aria-pressed={sp.veg === "1"} className={`${chip(sp.veg === "1")} h-12 gap-2`}><VegMark veg />Veg only</Link>
           </form>
         </div>
-        <nav aria-label="Categories" className="sticky top-16 z-30 -mx-4 mt-6 flex gap-2 overflow-x-auto border-b border-line bg-ground/95 px-4 py-3 backdrop-blur md:top-20 md:mx-0 md:px-0">
+        <nav aria-label="Categories" className="no-scrollbar sticky top-[var(--header-h)] z-30 -mx-4 mt-6 flex gap-2 overflow-x-auto overscroll-x-contain border-b border-line bg-ground px-4 py-3 md:mx-0 md:bg-ground/95 md:px-0 md:backdrop-blur">
           <Link href={qs({ c: undefined, tag: undefined })} className={chip(!sp.c && !sp.tag)}>All</Link>
           <Link href={qs({ tag: sp.tag === "Healthy" ? undefined : "Healthy", c: undefined })} className={chip(sp.tag === "Healthy")}>Healthy</Link>
           <Link href="/plans" className={chip(false)}>Meal plans</Link>

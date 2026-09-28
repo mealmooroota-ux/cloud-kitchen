@@ -18,7 +18,7 @@ const ITEMS: { href: string; label: string; roles: Role[] }[] = [
 export function AdminNav({ role }: { role: Role }) {
   const path = usePathname();
   return (
-    <nav aria-label="Admin" className="flex gap-1 overflow-x-auto md:flex-col">
+    <nav aria-label="Admin" className="no-scrollbar -mx-4 flex gap-1 overflow-x-auto overscroll-x-contain px-4 lg:mx-0 lg:flex-col lg:px-0">
       {ITEMS.filter((i) => i.roles.includes(role)).map((i) => {
         const on = i.href === "/admin" ? path === "/admin" : path.startsWith(i.href);
         return <Link key={i.href} href={i.href} aria-current={on ? "page" : undefined} className={`flex h-11 shrink-0 items-center rounded-[12px] px-3 text-sm font-semibold ${on ? "bg-brand-soft text-ink" : "text-muted hover:bg-raised"}`}>{i.label}</Link>;

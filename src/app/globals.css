@@ -37,8 +37,16 @@
 }
 
 @layer base {
-  html { background: var(--color-ground); color: var(--color-ink); -webkit-text-size-adjust: 100%; }
+  /* Height of the sticky header, including the notch area. Used by anything that sits under it. */
+  :root { --header-h: calc(4rem + env(safe-area-inset-top, 0px)); }
+  @media (min-width: 768px) { :root { --header-h: calc(5rem + env(safe-area-inset-top, 0px)); } }
+  html { background: var(--color-ground); color: var(--color-ink); -webkit-text-size-adjust: 100%; text-size-adjust: 100%; scroll-padding-top: var(--header-h); }
   body { font-family: var(--font-sans); font-size: 16px; line-height: 1.5; text-rendering: optimizeLegibility; -webkit-font-smoothing: antialiased; }
+  /* Never let one wide element make the whole page slide sideways on a phone.
+     "clip" (unlike "hidden") keeps position: sticky working. */
+  @supports (overflow: clip) { body { overflow-x: clip; } }
+  /* Touch: no grey flash on tap, no double-tap-to-zoom delay on controls */
+  a, button, summary, label, input, select, textarea { -webkit-tap-highlight-color: transparent; touch-action: manipulation; }
   :focus-visible { outline: 2px solid var(--color-brand); outline-offset: 2px; border-radius: 4px; }
   ::selection { background: var(--color-brand-soft); }
   input, select, textarea { font-size: 16px; } /* no iOS zoom */
@@ -60,14 +68,16 @@
 .animate-pulse-dot { animation: pulse-dot 1.8s var(--ease-in-out) infinite; }
 
 /* Scroll reveal: only hides content once JS has confirmed it can reveal it */
-html.js .reveal { opacity: 0; transform: translateY(28px); transition: opacity .8s var(--ease-out), transform .8s var(--ease-out); }
+html.js .reveal { opacity: 0; transform: translate3d(0, 28px, 0); transition: opacity .8s var(--ease-out), transform .8s var(--ease-out); }
+@media (max-width: 767px) { html.js .reveal { transform: translate3d(0, 16px, 0); transition-duration: .6s; } }
 html.js .reveal.in { opacity: 1; transform: none; }
 @media (prefers-reduced-motion: reduce) { html.js .reveal { opacity: 1; transform: none; } }
 
 /* Dish marquee */
 @keyframes marquee { from { transform: translateX(0) } to { transform: translateX(-50%) } }
 .marquee-track { animation: marquee 60s linear infinite; }
-.marquee:hover .marquee-track { animation-play-state: paused; }
+@media (hover: hover) { .marquee:hover .marquee-track { animation-play-state: paused; } }
+.marquee-track, .spin-slow { will-change: transform; backface-visibility: hidden; }
 @media (prefers-reduced-motion: reduce) { .marquee-track { animation: none; } .marquee { overflow-x: auto; } }
 
 details.faq > summary { list-style: none; cursor: pointer; }
@@ -88,8 +98,22 @@ details.faq[open] .faq-icon { transform: rotate(45deg); }
 .hero-line { display: block; overflow: hidden; padding-bottom: .06em; }
 .hero-line > span { display: block; animation: rise 1.1s var(--ease-out) both; }
 .hero-fade { animation: fade-up .9s var(--ease-out) both; }
-.hero-media { animation: clip-in 1.4s var(--ease-out) .15s both; }
+.hero-media { animation: clip-in 1.4s var(--ease-out) .15s backwards; }
+/* Phones: clip-path repaints the whole photo every frame while the page is still starting up.
+   A transform + opacity entrance runs on the GPU instead. */
+@keyframes media-in { from { opacity: 0; transform: scale(1.04) } to { opacity: 1; transform: none } }
+@media (max-width: 767px), (pointer: coarse) { .hero-media { animation: media-in .9s var(--ease-out) .1s backwards; } }
 .split-line { padding-bottom: .08em; }
 @media (prefers-reduced-motion: reduce) { .hero-line > span, .hero-fade, .hero-media { animation: none; } }
 @keyframes spin-slow { to { transform: rotate(360deg) } }
 .spin-slow { animation: spin-slow 80s linear infinite; }
+
+/* Phones: fixed bars at the bottom of the screen (cart bar, checkout, add to cart) must not cover the
+   end of the page. Reserve their height under the footer whenever one is showing. */
+@media (max-width: 767px) {
+  body:has(.mobile-bottom-bar) footer { padding-bottom: calc(96px + env(safe-area-inset-bottom, 0px)); }
+}
+
+/* Sideways chip rows: scroll by swipe, no scrollbar */
+.no-scrollbar { scrollbar-width: none; -webkit-overflow-scrolling: touch; }
+.no-scrollbar::-webkit-scrollbar { display: none; }

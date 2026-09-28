@@ -23,7 +23,7 @@ export function PlanEditor({ plan: p }: { plan: MealPlan | null }) {
       </div>
       <L label="Description"><input name="description" defaultValue={p?.description} className={inp} /></L>
       <L label="Features (one per line)"><textarea name="features" rows={4} defaultValue={p?.features.join("\n")} className="rounded-[8px] border border-line-strong bg-raised p-3 text-sm font-normal" /></L>
-      <fieldset className="grid gap-3 md:grid-cols-4"><legend className="mb-2 text-sm font-semibold">Meals and delivery slots</legend>
+      <fieldset className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4"><legend className="mb-2 text-sm font-semibold">Meals and delivery slots</legend>
         {MEALS.map((m) => <div key={m} className="flex flex-col gap-2 rounded-[8px] bg-raised p-3"><Check name={`meal_${m}`} label={LBL[m]} defaultChecked={p?.meals.includes(m)} /><input aria-label={`${LBL[m]} delivery slot`} name={`slot_${m}`} defaultValue={p?.delivery_slots?.[m] ?? ""} placeholder="12:30–1:30 PM" className={inp} /></div>)}
       </fieldset>
       <fieldset className="flex flex-col gap-2"><legend className="mb-2 text-sm font-semibold">Prices (₹, including all meals; leave veg empty to hide a duration)</legend>

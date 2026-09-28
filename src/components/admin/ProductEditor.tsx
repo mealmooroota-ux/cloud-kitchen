@@ -34,7 +34,7 @@ export function ProductEditor({ product: p, categories }: { product: Product | n
         <L label="Price (₹)"><input name="price" required inputMode="decimal" defaultValue={p ? (p.price_paise / 100).toString() : ""} className={inp} /></L>
       </div>
       <L label="Description"><textarea name="description" rows={3} defaultValue={p?.description} className="rounded-[8px] border border-line-strong bg-raised p-3 text-sm font-normal" /></L>
-      <div className="grid gap-4 sm:grid-cols-3 md:grid-cols-6">
+      <div className="grid gap-4 sm:grid-cols-3 xl:grid-cols-6">
         <L label="Prep min"><input name="prep_minutes" type="number" min={1} defaultValue={p?.prep_minutes ?? 20} className={inp} /></L>
         <L label="Serves"><input name="serves" defaultValue={p?.serves ?? ""} className={inp} /></L>
         <L label="kcal"><input name="calories" type="number" defaultValue={p?.calories ?? ""} className={inp} /></L>

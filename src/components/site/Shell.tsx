@@ -7,7 +7,7 @@ export function Shell({ children, cartBar = true }: { children: React.ReactNode;
   return (
     <>
       <Header />
-      <main id="main">{children}</main>
+      <main id="main" className="overflow-x-clip">{children}</main>
       <Footer />
       {cartBar && <MobileCartBar />}
       <MotionLayer />

@@ -24,14 +24,14 @@ export function CartView() {
                 <p className="tabular mt-1 font-mono text-[15px]">{rupees(l.unitPaise * l.quantity)}</p>
               </div>
               <div className="flex h-10 items-center rounded-full bg-brand-soft px-1">
-                <button type="button" aria-label={`Remove one ${l.name}`} onClick={() => cart.setQty(l.key, l.quantity - 1)} className="grid size-9 place-items-center text-lg text-brand">−</button>
+                <button type="button" aria-label={`Remove one ${l.name}`} onClick={() => cart.setQty(l.key, l.quantity - 1)} className="grid size-9 place-items-center text-lg text-brand pointer-coarse:size-11">−</button>
                 <span className="tabular w-6 text-center font-mono">{l.quantity}</span>
-                <button type="button" aria-label={`Add one ${l.name}`} onClick={() => cart.setQty(l.key, l.quantity + 1)} className="grid size-9 place-items-center text-lg text-brand">+</button>
+                <button type="button" aria-label={`Add one ${l.name}`} onClick={() => cart.setQty(l.key, l.quantity + 1)} className="grid size-9 place-items-center text-lg text-brand pointer-coarse:size-11">+</button>
               </div>
             </li>
           ))}
         </ul>
-        <Link href="/menu" className="mt-4 inline-block text-sm font-semibold text-brand">Add more dishes</Link>
+        <Link href="/menu" className="mt-4 inline-flex items-center text-sm font-semibold text-brand pointer-coarse:min-h-11">Add more dishes</Link>
       </section>
       <aside className="h-fit rounded-[20px] border border-line bg-surface p-6 md:sticky md:top-28">
         <h2 className="mb-4 text-lg font-semibold">Bill</h2>
@@ -44,7 +44,7 @@ export function CartView() {
           <div className="flex justify-between text-base font-semibold text-ink"><dt>Total</dt><dd className="tabular font-mono">{quote ? rupees(quote.total_paise, { decimals: true }) : "…"}</dd></div>
         </dl>
         <p className="mt-2 text-xs text-muted">Calculated by our server. Coupons can be added at checkout.</p>
-        <div className="fixed inset-x-0 bottom-0 z-40 border-t border-line bg-surface px-4 pb-[max(16px,env(safe-area-inset-bottom))] pt-3 md:static md:mt-6 md:border-0 md:p-0">
+        <div className="mobile-bottom-bar fixed inset-x-0 bottom-0 z-40 border-t border-line bg-surface px-4 pb-[max(16px,env(safe-area-inset-bottom))] pt-3 md:static md:mt-6 md:border-0 md:p-0">
           <LinkButton href="/checkout" size="lg" className={`w-full ${error || !quote ? "pointer-events-none opacity-40" : ""}`}>Proceed to checkout</LinkButton>
         </div>
       </aside>

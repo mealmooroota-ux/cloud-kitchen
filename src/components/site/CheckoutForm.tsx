@@ -84,7 +84,7 @@ export function CheckoutForm({ addresses, kitchen, radiusKm, open, phone: phone0
             <p className="mt-1 text-xs">Ready in about {quote.prep_minutes + 5} min, then delivery.</p>
           </dl>
         )}
-        <div className="fixed inset-x-0 bottom-0 z-40 border-t border-line bg-surface px-4 pb-[max(16px,env(safe-area-inset-bottom))] pt-3 md:static md:mt-6 md:border-0 md:p-0">
+        <div className="mobile-bottom-bar fixed inset-x-0 bottom-0 z-40 border-t border-line bg-surface px-4 pb-[max(16px,env(safe-area-inset-bottom))] pt-3 md:static md:mt-6 md:border-0 md:p-0">
           <Button size="lg" className="w-full" disabled={busy || !quote || !addressId || outOfZone || !open || !phoneOk} onClick={place}>
             {busy ? "Placing order…" : quote ? `Pay ${rupees(quote.total_paise, { decimals: true })}` : "Pay"}
           </Button>

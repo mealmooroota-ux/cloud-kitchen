@@ -2,11 +2,12 @@
 import dynamic from "next/dynamic";
 import Image from "next/image";
 import Link from "next/link";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef } from "react";
 import { LogoMark, MARK_BOWL, MARK_STEAM } from "@/components/brand/Logo";
 import { DishImage } from "@/components/ui/DishImage";
 import { btnClass } from "@/components/ui";
 import { useTier } from "@/components/three/useTier";
+import { isLowPowerMotion, loadGsap } from "@/components/motion/gsap";
 import { csv, type Item } from "@/lib/defaults";
 
 const CookerCanvas = dynamic(() => import("@/components/three/CookerCanvas"), { ssr: false });
@@ -22,20 +23,25 @@ export function Experience({ c, dishes, timeline }: { c: Record<string, unknown>
   const tier = useTier();
   const root = useRef<HTMLDivElement>(null);
   const cookerProgress = useRef(0);
-  const [eta, setEta] = useState(startMinutes);
+  const etaEl = useRef<HTMLSpanElement>(null);
   const motion = tier === "full" || tier === "lite";
   const times = timeline.length ? timeline : [{ title: "5:30 AM", body: "The market run." }];
 
   useEffect(() => {
     if (!motion || !root.current) return;
     let revert = () => {};
+    let cancelled = false;
     (async () => {
-      const [{ gsap }, { ScrollTrigger }, { SplitText }, { DrawSVGPlugin }, { MotionPathPlugin }] = await Promise.all([
-        import("gsap"), import("gsap/ScrollTrigger"), import("gsap/SplitText"), import("gsap/DrawSVGPlugin"), import("gsap/MotionPathPlugin"),
+      const [{ gsap, ScrollTrigger }, { SplitText }, { DrawSVGPlugin }, { MotionPathPlugin }] = await Promise.all([
+        loadGsap(), import("gsap/SplitText"), import("gsap/DrawSVGPlugin"), import("gsap/MotionPathPlugin"),
       ]);
-      gsap.registerPlugin(ScrollTrigger, SplitText, DrawSVGPlugin, MotionPathPlugin);
-      ScrollTrigger.config({ ignoreMobileResize: true });
+      if (cancelled || !root.current) return;
+      gsap.registerPlugin(SplitText, DrawSVGPlugin, MotionPathPlugin);
       const q = gsap.utils.selector(root);
+      // Phones: blur filters repaint the whole layer every frame, so fade and slide only.
+      const low = isLowPowerMotion();
+      const blur = (px: number) => (low ? {} : { filter: `blur(${px}px)` });
+      const pin = { pin: true, anticipatePin: 1 };
 
       const ctx = gsap.context(() => {
         // progress bar across the whole experience
@@ -51,29 +57,32 @@ export function Experience({ c, dishes, timeline }: { c: Record<string, unknown>
         gsap.to(q(".xp-prologue-inner"), { yPercent: -30, opacity: 0, scale: 0.92, ease: "none", scrollTrigger: { trigger: q(".xp-prologue"), start: "top top", end: "bottom top", scrub: true } });
 
         // ---------- 1. A day: the sky changes, the clock runs, the sun crosses ----------
-        const day = gsap.timeline({ scrollTrigger: { trigger: q(".xp-day"), start: "top top", end: `+=${times.length * 70}%`, scrub: 1, pin: true } });
+        const day = gsap.timeline({ scrollTrigger: { trigger: q(".xp-day"), start: "top top", end: `+=${times.length * 70}%`, scrub: 1, ...pin } });
         SKY.forEach((c, i) => { if (i) day.to(q(".xp-day"), { backgroundColor: c, color: INK_ON[i], duration: 1, ease: "none" }, (i - 1)); });
         day.to(q(".xp-sun"), { motionPath: { path: "#xp-arc", align: "#xp-arc", alignOrigin: [0.5, 0.5] }, duration: SKY.length - 1, ease: "none" }, 0);
         const slots = q(".xp-slot");
         const per = (SKY.length - 1) / slots.length;
         slots.forEach((el, i) => {
-          day.fromTo(el, { opacity: 0, y: 60, filter: "blur(8px)" }, { opacity: 1, y: 0, filter: "blur(0px)", duration: per * 0.35 }, i * per);
-          if (i < slots.length - 1) day.to(el, { opacity: 0, y: -60, filter: "blur(8px)", duration: per * 0.3 }, i * per + per * 0.7);
+          day.fromTo(el, { opacity: 0, y: 60, ...blur(8) }, { opacity: 1, y: 0, ...blur(0), duration: per * 0.35 }, i * per);
+          if (i < slots.length - 1) day.to(el, { opacity: 0, y: -60, ...blur(8), duration: per * 0.3 }, i * per + per * 0.7);
         });
 
         // ---------- 2. Ingredients fly into one bowl ----------
-        const ing = gsap.timeline({ scrollTrigger: { trigger: q(".xp-ing"), start: "top top", end: "+=220%", scrub: 1, pin: true } });
+        const ing = gsap.timeline({ scrollTrigger: { trigger: q(".xp-ing"), start: "top top", end: "+=220%", scrub: 1, invalidateOnRefresh: true, ...pin } });
         q(".xp-word").forEach((el, i) => {
           const a = (i / INGREDIENTS.length) * Math.PI * 2;
-          gsap.set(el, { x: Math.cos(a) * window.innerWidth * 0.42, y: Math.sin(a) * window.innerHeight * 0.38, rotate: gsap.utils.random(-18, 18), scale: gsap.utils.random(0.9, 1.5) });
-          ing.to(el, { x: 0, y: window.innerHeight * 0.08, scale: 0.15, rotate: 0, opacity: 0, filter: "blur(6px)", duration: 1, ease: "power2.in" }, i * 0.06);
+          const rot = gsap.utils.random(-18, 18), sc = gsap.utils.random(low ? 0.8 : 0.9, low ? 1.2 : 1.5);
+          // Function values: recalculated after a rotate/resize, so words start from the edges of the current screen.
+          ing.fromTo(el,
+            { x: () => Math.cos(a) * window.innerWidth * 0.42, y: () => Math.sin(a) * window.innerHeight * 0.38, rotate: rot, scale: sc, opacity: 1, ...blur(0) },
+            { x: 0, y: () => window.innerHeight * 0.08, scale: 0.15, rotate: 0, opacity: 0, ...blur(6), duration: 1, ease: "power2.in", immediateRender: true }, i * 0.06);
         });
         ing.fromTo(q(".xp-bowl .logo-bowl"), { scale: 0.2, opacity: 0, transformOrigin: "50% 60%" }, { scale: 1, opacity: 1, duration: 0.6, ease: "back.out(2)" }, 0.9)
           .fromTo(q(".xp-bowl .logo-steam"), { drawSVG: "0%" }, { drawSVG: "100%", duration: 0.8 }, 1.3)
           .from(SplitText.create(q(".xp-ing-title"), { type: "words" }).words, { yPercent: 100, opacity: 0, stagger: 0.08, duration: 0.5 }, 1.5);
 
         // ---------- 3. The cooker opens; giant words slide past ----------
-        ScrollTrigger.create({ trigger: q(".xp-cook"), start: "top top", end: "+=260%", scrub: 0.6, pin: true,
+        ScrollTrigger.create({ trigger: q(".xp-cook"), start: "top top", end: "+=260%", scrub: 0.6, ...pin,
           onUpdate: (s) => { const p = s.progress; cookerProgress.current = p < 0.15 ? p / 0.15 : p > 0.85 ? Math.max(0, 1 - (p - 0.85) / 0.15) : 1; } });
         gsap.fromTo(q(".xp-band-a"), { xPercent: 0 }, { xPercent: -40, ease: "none", scrollTrigger: { trigger: q(".xp-cook"), start: "top top", end: "+=260%", scrub: true } });
         gsap.fromTo(q(".xp-band-b"), { xPercent: -40 }, { xPercent: 0, ease: "none", scrollTrigger: { trigger: q(".xp-cook"), start: "top top", end: "+=260%", scrub: true } });
@@ -81,22 +90,23 @@ export function Experience({ c, dishes, timeline }: { c: Record<string, unknown>
         // ---------- 4. Horizontal dish gallery ----------
         const track = q(".xp-track")[0] as HTMLElement;
         const dist = () => track.scrollWidth - window.innerWidth;
-        const horiz = gsap.to(track, { x: () => -dist(), ease: "none", scrollTrigger: { trigger: q(".xp-gallery"), start: "top top", end: () => `+=${dist()}`, scrub: 1, pin: true, invalidateOnRefresh: true } });
+        const horiz = gsap.to(track, { x: () => -dist(), ease: "none", scrollTrigger: { trigger: q(".xp-gallery"), start: "top top", end: () => `+=${dist()}`, scrub: 1, ...pin, invalidateOnRefresh: true } });
         q(".xp-card").forEach((card) => {
           gsap.fromTo(card.querySelector(".xp-card-img"), { xPercent: -12 }, { xPercent: 12, ease: "none", scrollTrigger: { trigger: card, containerAnimation: horiz, start: "left right", end: "right left", scrub: true } });
-          gsap.from(card, { rotate: 4, y: 60, opacity: 0.3, ease: "none", scrollTrigger: { trigger: card, containerAnimation: horiz, start: "left 95%", end: "left 55%", scrub: true } });
+          gsap.from(card, { rotate: low ? 2 : 4, y: low ? 30 : 60, opacity: 0.3, ease: "none", scrollTrigger: { trigger: card, containerAnimation: horiz, start: "left 95%", end: "left 55%", scrub: true } });
         });
 
         // ---------- 5. Manifesto: words light up as you read ----------
         const mani = SplitText.create(q(".xp-manifesto"), { type: "words" });
-        gsap.fromTo(mani.words, { opacity: 0.12 }, { opacity: 1, stagger: 0.1, ease: "none", scrollTrigger: { trigger: q(".xp-mani"), start: "top top", end: "+=180%", scrub: 1, pin: true } });
+        gsap.fromTo(mani.words, { opacity: 0.12 }, { opacity: 1, stagger: 0.1, ease: "none", scrollTrigger: { trigger: q(".xp-mani"), start: "top top", end: "+=180%", scrub: 1, ...pin } });
 
         // ---------- 6. Stove to door: the route draws, the rider follows, the ETA counts down ----------
         const eta0 = { v: startMinutes };
-        const ride = gsap.timeline({ scrollTrigger: { trigger: q(".xp-route"), start: "top top", end: "+=240%", scrub: 1, pin: true } });
+        const ride = gsap.timeline({ scrollTrigger: { trigger: q(".xp-route"), start: "top top", end: "+=240%", scrub: 1, ...pin } });
         ride.fromTo(q("#xp-road"), { drawSVG: "0%" }, { drawSVG: "100%", duration: 1, ease: "none" }, 0)
           .to(q(".xp-rider"), { motionPath: { path: "#xp-road", align: "#xp-road", alignOrigin: [0.5, 0.5], autoRotate: false }, duration: 1, ease: "none" }, 0)
-          .to(eta0, { v: 0, duration: 1, ease: "none", onUpdate: () => setEta(Math.round(eta0.v)) }, 0)
+          // Write the number straight into the page: no React re-render on every scroll frame.
+          .to(eta0, { v: 0, duration: 1, ease: "none", onUpdate: () => { const v = String(Math.round(eta0.v)); if (etaEl.current && etaEl.current.textContent !== v) etaEl.current.textContent = v; } }, 0)
           .fromTo(q(".xp-delivered"), { scale: 0, opacity: 0 }, { scale: 1, opacity: 1, duration: 0.15, ease: "back.out(3)" }, 1)
           .from(q(".xp-route-step"), { opacity: 0, x: -30, stagger: 0.25, duration: 0.2 }, 0.05);
 
@@ -109,55 +119,55 @@ export function Experience({ c, dishes, timeline }: { c: Record<string, unknown>
       requestAnimationFrame(() => ScrollTrigger.refresh());
       revert = () => ctx.revert();
     })();
-    return () => revert();
+    return () => { cancelled = true; revert(); };
   }, [motion, times.length, startMinutes, INGREDIENTS.length]);
 
   const H = "font-display leading-[0.95] tracking-[-0.04em]";
   return (
     <div ref={root} className="relative">
-        <div className="xp-progress fixed inset-x-0 top-16 z-30 h-[3px] origin-left scale-x-0 bg-brand md:top-20" aria-hidden="true" />
+        <div className="xp-progress fixed inset-x-0 top-[var(--header-h)] z-30 h-[3px] origin-left scale-x-0 bg-brand" aria-hidden="true" />
 
         {/* 0. Prologue */}
-        <section className="xp-prologue relative grid h-[calc(100dvh-4rem)] place-items-center overflow-hidden bg-ink text-[#FFF8EE] md:h-[calc(100dvh-5rem)]">
+        <section className="xp-prologue relative grid h-[calc(100svh-var(--header-h))] min-h-[420px] place-items-center overflow-hidden bg-ink text-[#FFF8EE]">
           <div className="xp-prologue-inner flex flex-col items-center gap-6 px-4 text-center">
-            <LogoMark size={132} tone="onDark" className="xp-logo" />
-            <h1 className={`xp-name ${H} whitespace-nowrap text-[15vw] font-semibold tracking-[0.04em] md:text-[150px] md:tracking-[0.06em]`}>MOOROOTA</h1>
-            <p className="xp-tag text-sm font-semibold uppercase tracking-[0.32em] text-[#E2B85A]">{t("tagline")}</p>
+            <LogoMark size={132} tone="onDark" className="xp-logo size-[96px] md:size-[132px]" />
+            <h1 className={`xp-name ${H} whitespace-nowrap text-[15vw] font-semibold tracking-[0.04em] md:text-[min(150px,13vw)] md:tracking-[0.06em]`}>MOOROOTA</h1>
+            <p className="xp-tag text-xs font-semibold uppercase tracking-[0.24em] text-[#E2B85A] sm:text-sm sm:tracking-[0.32em]">{t("tagline")}</p>
             <p className="xp-cue mt-8 flex flex-col items-center gap-2 text-sm text-[#CFC5B6]">{t("scrollCue")}<span className="block h-10 w-px animate-pulse bg-[#CFC5B6]" /></p>
           </div>
         </section>
 
         {/* 1. A day in the kitchen */}
-        <section className="xp-day relative h-dvh overflow-hidden" style={{ backgroundColor: SKY[0], color: INK_ON[0] }}>
+        <section className="xp-day relative h-svh overflow-hidden" style={{ backgroundColor: SKY[0], color: INK_ON[0] }}>
           <svg className="pointer-events-none absolute inset-0 h-full w-full" viewBox="0 0 1000 600" preserveAspectRatio="none" aria-hidden="true">
             <path id="xp-arc" d="M-40 560 Q500 -140 1040 560" fill="none" stroke="currentColor" strokeOpacity=".12" strokeDasharray="4 10" />
           </svg>
           <div className="xp-sun absolute left-0 top-0 size-24 rounded-full bg-[#E2B85A] shadow-[0_0_120px_40px_rgba(226,184,90,.45)] md:size-36" aria-hidden="true" />
           <div className="relative mx-auto grid h-full max-w-[1320px] items-center px-4 md:px-8">
-            <p className="absolute left-4 top-24 text-sm font-semibold uppercase tracking-[0.3em] opacity-70 md:left-8">{t("dayLabel")}</p>
+            <p className="absolute left-4 top-[calc(var(--header-h)+1.5rem)] text-sm font-semibold uppercase tracking-[0.3em] opacity-70 md:left-8">{t("dayLabel")}</p>
             {times.map((t, i) => (
               <div key={i} className="xp-slot absolute inset-x-4 flex flex-col gap-4 md:inset-x-8" style={{ opacity: motion ? 0 : 1, position: motion ? "absolute" : "relative" }}>
-                <span className={`${H} tabular text-[22vw] font-light md:text-[15vw]`}>{t.title}</span>
-                <span className="max-w-[640px] text-2xl leading-snug md:text-4xl">{t.body}</span>
+                <span className={`${H} tabular whitespace-nowrap text-[17vw] font-light md:text-[15vw]`}>{t.title}</span>
+                <span className="max-w-[640px] text-xl leading-snug sm:text-2xl md:text-4xl">{t.body}</span>
               </div>
             ))}
           </div>
         </section>
 
         {/* 2. Ingredients → one bowl */}
-        <section className="xp-ing relative grid h-dvh place-items-center overflow-hidden bg-ground">
+        <section className="xp-ing relative grid h-svh place-items-center overflow-hidden bg-ground">
           {INGREDIENTS.map((w) => <span key={w} className={`xp-word ${H} absolute whitespace-nowrap text-[9vw] text-brand/80 md:text-[5.5vw]`} aria-hidden="true" style={{ opacity: motion ? 1 : 0 }}>{w}</span>)}
           <div className="relative flex flex-col items-center gap-6 text-center">
-            <svg className="xp-bowl" width="220" height="220" viewBox="0 0 64 64" aria-hidden="true">
+            <svg className="xp-bowl size-[160px] md:size-[220px]" width="220" height="220" viewBox="0 0 64 64" aria-hidden="true">
               <path className="logo-bowl" d={MARK_BOWL} fill="var(--color-brand)" />
               <path className="logo-steam" d={MARK_STEAM} fill="none" stroke="var(--color-ink)" strokeWidth="5" strokeLinecap="round" strokeLinejoin="round" />
             </svg>
-            <h2 className={`xp-ing-title ${H} max-w-[900px] px-4 text-[44px] md:text-[80px]`}>{t("ingredientsTitle")}</h2>
+            <h2 className={`xp-ing-title ${H} max-w-[900px] px-4 text-[clamp(32px,10vw,44px)] md:text-[80px]`}>{t("ingredientsTitle")}</h2>
           </div>
         </section>
 
         {/* 3. The cooker */}
-        <section className="xp-cook relative h-dvh overflow-hidden bg-raised">
+        <section className="xp-cook relative h-svh overflow-hidden bg-raised">
           <div className="pointer-events-none absolute inset-x-0 top-[12%] flex flex-col gap-2" aria-hidden="true">
             <p className={`xp-band-a ${H} whitespace-nowrap text-[18vw] text-transparent [-webkit-text-stroke:1.5px_var(--color-line-strong)]`}>{t("cookerBandA")}</p>
             <p className={`xp-band-b ${H} whitespace-nowrap text-[18vw] text-brand/15`}>{t("cookerBandB")}</p>
@@ -166,23 +176,23 @@ export function Experience({ c, dishes, timeline }: { c: Record<string, unknown>
             {tier === "full" ? <CookerCanvas progress={cookerProgress} framing="story" className="absolute inset-0" />
               : <Image src="/images/cooker-exploded.webp" alt="" width={800} height={991} className="absolute left-1/2 top-1/2 h-[80%] w-auto -translate-x-1/2 -translate-y-1/2" />}
           </div>
-          <p className="absolute bottom-10 left-1/2 w-full max-w-[560px] -translate-x-1/2 px-4 text-center text-lg text-muted md:text-xl">{t("cookerLine")}</p>
+          <p className="absolute bottom-[max(2.5rem,env(safe-area-inset-bottom))] left-1/2 w-full max-w-[560px] -translate-x-1/2 px-4 text-center text-base text-muted sm:text-lg md:text-xl">{t("cookerLine")}</p>
         </section>
 
         {/* 4. Gallery */}
         <section className="xp-gallery relative overflow-hidden bg-ink text-[#FFF8EE]">
-          <div className={`xp-track flex h-dvh items-center gap-6 px-[6vw] md:gap-10 ${motion ? "w-max" : "flex-wrap h-auto py-20"}`}>
+          <div className={`xp-track flex h-svh items-center gap-6 px-[6vw] md:gap-10 ${motion ? "w-max" : "flex-wrap h-auto py-20"}`}>
             <div className="flex w-[80vw] shrink-0 flex-col gap-5 md:w-[34vw]">
               <p className="text-sm font-semibold uppercase tracking-[0.3em] text-[#E2B85A]">{t("galleryEyebrow")}</p>
-              <h2 className={`${H} text-[56px] md:text-[96px]`}>{t("galleryTitle")}</h2>
+              <h2 className={`${H} text-[clamp(40px,13vw,56px)] md:text-[96px]`}>{t("galleryTitle")}</h2>
               <p className="max-w-sm text-lg text-[#CFC5B6]">{t("galleryBody")}</p>
             </div>
             {dishes.map((d, i) => (
-              <Link key={d.slug} href={`/menu/${d.slug}`} className="xp-card group relative block h-[62vh] w-[72vw] shrink-0 overflow-hidden rounded-[32px] md:w-[30vw]">
+              <Link key={d.slug} href={`/menu/${d.slug}`} className="xp-card group relative block h-[min(62svh,560px)] w-[78vw] max-w-[440px] shrink-0 overflow-hidden rounded-[32px] md:w-[30vw]">
                 <div className="xp-card-img absolute -inset-x-[15%] inset-y-0"><DishImage publicId={d.image} name={d.name} sizes="(min-width: 768px) 40vw, 90vw" aspect="h-full" className="h-full" /></div>
                 <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/10 to-transparent" />
                 <div className="absolute inset-x-6 bottom-6 flex items-end justify-between gap-4">
-                  <span><span className="tabular block font-mono text-sm text-[#E2B85A]">{String(i + 1).padStart(2, "0")}</span><span className={`${H} block text-[34px] md:text-[44px]`}>{d.name}</span></span>
+                  <span><span className="tabular block font-mono text-sm text-[#E2B85A]">{String(i + 1).padStart(2, "0")}</span><span className={`${H} block text-[clamp(26px,8vw,34px)] md:text-[44px]`}>{d.name}</span></span>
                   <span className="grid size-12 shrink-0 place-items-center rounded-full bg-[#FFF8EE] text-ink transition-transform duration-300 group-hover:-rotate-45" aria-hidden="true">→</span>
                 </div>
               </Link>
@@ -192,17 +202,17 @@ export function Experience({ c, dishes, timeline }: { c: Record<string, unknown>
         </section>
 
         {/* 5. Manifesto */}
-        <section className="xp-mani grid min-h-dvh place-items-center bg-ground px-4 py-24">
-          <p className={`xp-manifesto ${H} max-w-[1100px] text-[40px] md:text-[76px]`}>{t("manifesto")}</p>
+        <section className="xp-mani grid min-h-svh place-items-center bg-ground px-4 py-24">
+          <p className={`xp-manifesto ${H} max-w-[1100px] text-[clamp(30px,8.5vw,40px)] md:text-[76px]`}>{t("manifesto")}</p>
         </section>
 
         {/* 6. Stove to door */}
-        <section className="xp-route relative h-dvh overflow-hidden bg-surface">
-          <div className="mx-auto grid h-full max-w-[1320px] items-center gap-6 px-4 py-24 md:grid-cols-[1fr_1.6fr] md:px-8">
-            <div className="flex flex-col gap-6">
+        <section className="xp-route relative h-svh overflow-hidden bg-surface">
+          <div className="mx-auto grid h-full max-w-[1320px] content-center items-center gap-4 px-4 pb-8 pt-[calc(var(--header-h)+1rem)] md:gap-6 md:py-24 md:grid-cols-[1fr_1.6fr] md:px-8">
+            <div className="flex flex-col gap-3 md:gap-6">
               <p className="text-sm font-semibold uppercase tracking-[0.3em] text-saffron">{t("routeEyebrow")}</p>
-              <p className={`${H} tabular text-[96px] md:text-[160px]`} aria-live="off">{eta}<span className="text-[0.35em] text-muted"> min</span></p>
-              <ol className="flex flex-col gap-3 text-lg">
+              <p className={`${H} tabular text-[clamp(64px,20vw,96px)] md:text-[160px]`} aria-live="off"><span ref={etaEl}>{startMinutes}</span><span className="text-[0.35em] text-muted"> min</span></p>
+              <ol className="flex flex-col gap-2 text-base sm:text-lg md:gap-3">
                 {csv(c.routeSteps).map((s, i) => <li key={s} className="xp-route-step flex items-center gap-3"><span className="tabular font-mono text-sm text-brand">0{i + 1}</span>{s}</li>)}
               </ol>
             </div>
@@ -222,10 +232,10 @@ export function Experience({ c, dishes, timeline }: { c: Record<string, unknown>
         </section>
 
         {/* 7. Finale */}
-        <section className="xp-end relative grid min-h-dvh place-items-center overflow-hidden bg-brand px-4 py-24 text-[#FFF8EE]">
+        <section className="xp-end relative grid min-h-svh place-items-center overflow-hidden bg-brand px-4 py-24 text-[#FFF8EE]">
           <div className="flex flex-col items-center gap-8 text-center">
             <LogoMark size={96} tone="light" />
-            <h2 className={`xp-final ${H} text-[64px] md:text-[150px]`}>{t("finalTitle")}</h2>
+            <h2 className={`xp-final ${H} text-[clamp(46px,15vw,64px)] md:text-[150px]`}>{t("finalTitle")}</h2>
             <div className="xp-end-cta flex flex-col gap-3 sm:flex-row">
               <Link href="/menu" data-magnetic className="inline-flex h-14 items-center justify-center rounded-[12px] bg-[#FFF8EE] px-8 font-semibold text-ink hover:bg-white">{t("finalCta")}</Link>
               <Link href="/plans" data-magnetic className={btnClass("secondary", "lg", "border-[#FFF8EE]/50 bg-transparent text-[#FFF8EE] hover:bg-white/10")}>{t("finalSecondaryCta")}</Link>

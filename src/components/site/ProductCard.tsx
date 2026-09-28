@@ -15,7 +15,7 @@ export function ProductCard({ p, showTags = true }: { p: Product; showTags?: boo
       </Link>
       <div className="flex flex-1 flex-col gap-1.5 p-4">
         {showTags && p.tags.length > 0 && <div className="mb-1 flex flex-wrap gap-1.5">{p.tags.slice(0, 2).map((t) => <Tag key={t}>{t}</Tag>)}</div>}
-        <h3 className="flex items-center gap-2 text-[17px] font-semibold leading-6"><VegMark veg={p.is_veg} /><Link href={`/menu/${p.slug}`} className="hover:underline">{p.name}</Link></h3>
+        <h3 className="flex items-center gap-2 text-[17px] font-semibold leading-6"><VegMark veg={p.is_veg} /><Link href={`/menu/${p.slug}`} className="hover:underline pointer-coarse:-my-2.5 pointer-coarse:inline-block pointer-coarse:py-2.5">{p.name}</Link></h3>
         <p className="line-clamp-2 text-sm text-muted">{p.description}</p>
         <p className="text-[13px] text-muted">{p.prep_minutes} min{p.serves ? ` · Serves ${p.serves}` : ""}{p.calories ? ` · ${p.calories} kcal` : ""}</p>
         <div className="mt-auto flex items-center justify-between pt-3">

@@ -23,7 +23,7 @@ export default async function KitchenPage() {
       <section className="mx-auto grid max-w-[1320px] items-end gap-10 px-4 pb-16 pt-10 md:grid-cols-[1fr_1.1fr] md:px-8 md:pb-24 md:pt-16">
         <Reveal className="flex flex-col gap-6">
           <p className="text-sm font-semibold text-herb">{s("eyebrow")}</p>
-          <h1 className="font-display text-[48px] leading-[0.98] tracking-[-0.04em] md:text-[84px]">{s("title")}</h1>
+          <h1 className="font-display text-[clamp(36px,11vw,48px)] leading-[0.98] tracking-[-0.04em] md:text-[84px]">{s("title")}</h1>
           <p className="max-w-[520px] text-lg leading-8 text-muted">{s("body")}</p>
         </Reveal>
         <Reveal delay={100}><DishImage publicId={s("imagePublicId") || null} name="Our cooks at work" sizes="(min-width: 768px) 660px, 100vw" priority aspect="aspect-[4/3]" className="rounded-[36px]" /></Reveal>
